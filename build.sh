@@ -10,7 +10,7 @@ B="$D/.build"
 mkdir -p "$B" "$D/site/app" "$D/artifact" "$D/local"
 
 cat "$S/app1.js" "$S/app2.js" "$S/app3.js" "$S/app4.js" "$S/app5.js" "$S/app5b.js" "$S/app7.js" "$S/app8.js" "$S/app8b.js" \
-    "$S/app9.js" "$S/app10.js" "$S/app11.js" "$S/app6.js" > "$B/app.js"
+    "$S/app9.js" "$S/app10.js" "$S/app11.js" "$S/app12.js" "$S/app6.js" > "$B/app.js"
 { cat "$S/p1.html"; printf '<script>\n"use strict";\n'; cat "$S/words.js"; echo; cat "$S/texts.js"; echo; cat "$B/app.js"; printf '</script>\n'; } > "$B/page-debug.html"
 
 # strip the debug block for everything that ships

@@ -164,7 +164,7 @@ document.addEventListener("keydown",e=>{
 let wlChecked=false;
 statusHooks.push(s=>{
   if(wlChecked||s==="connecting")return;wlChecked=true;
-  if(S.seenTips.welcome)return;
+  if(S.seenTips.welcome||MOVE)return;
   if(wlHasProgress()){S.seenTips.welcome=true;writeLocal();return}
   showWelcome(1);
 });

@@ -1,4 +1,6 @@
 /* ============================ BOOT ============================ */
+if(forwardFromOldHost())return;
+readMove();
 S=loadLocal();loadCoach();
 document.getElementById("tabs").addEventListener("click",e=>{
   const b=e.target.closest(".tab");if(!b)return;
@@ -11,6 +13,7 @@ $("touch-x").addEventListener("click",()=>{$("touch-note").hidden=true});
 $("brand-mark").innerHTML=logoSVG(30);addFavicon();
 wireSettings();syncSettingsUI();renderRing();route();
 setSaveStatus("connecting");connectAccount();
+showMove();
 /*DEBUG-START*/
 window.App={state:()=>S,gen:genLesson,genStep,wpm:wpmCalc,LESSONS,charInfo,reach,pseudoWord,
   debugStage:(text,mode)=>mountStage({crumb:"Debug",text,mode:mode||"stop",onFinish:r=>{window.App.last=r}}),ex:()=>EX,lastComp:()=>lastComp,merge,sanitize,emptyState,words:()=>WL,

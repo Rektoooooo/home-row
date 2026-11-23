@@ -7,6 +7,7 @@
    a white "sheet" above an SVG keycap keyboard and a two-hand finger diagram. */
 :root{
   --bg:#E6E9EE; --surface:#FCFCFD; --surface-2:#F1F3F6; --sunken:#D9DEE5; --line:#D2D7DF; --cap-edge:#BFC6D0;
+  --deck-a:#D3D9E2; --deck-b:#BEC6D1; --deck-hi:rgba(255,255,255,.75); --shine:1;
   --fg:#15181D; --fg-2:#3A404B; --muted:#677080;
   --btn:#1C2027; --btn-edge:#000000; --btn-fg:#F4F5F7;
   --f-pinky:#7C4DDB; --f-ring:#2F6FE0; --f-middle:#0D8F84; --f-index:#C98204; --f-thumb:#6B7686;
@@ -18,7 +19,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A;
+    --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#262A33; --deck-b:#16191E; --deck-hi:rgba(255,255,255,.07); --shine:.16;
     --fg:#ECEEF2; --fg-2:#C3C8D1; --muted:#8E96A4;
     --btn:#ECEEF2; --btn-edge:#9AA2AE; --btn-fg:#15181D;
     --f-pinky:#A585F5; --f-ring:#6B9CF5; --f-middle:#3CC7B8; --f-index:#F0B43A; --f-thumb:#97A1B0;
@@ -27,7 +28,7 @@
   }
 }
 :root[data-theme="dark"]{
-  --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A;
+  --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#262A33; --deck-b:#16191E; --deck-hi:rgba(255,255,255,.07); --shine:.16;
   --fg:#ECEEF2; --fg-2:#C3C8D1; --muted:#8E96A4;
   --btn:#ECEEF2; --btn-edge:#9AA2AE; --btn-fg:#15181D;
   --f-pinky:#A585F5; --f-ring:#6B9CF5; --f-middle:#3CC7B8; --f-index:#F0B43A; --f-thumb:#97A1B0;
@@ -136,7 +137,7 @@ kbd{font:500 12px var(--font-mono);padding:1px 6px;border-radius:5px;background:
 .stat{display:flex;align-items:baseline;gap:8px}.stat .num{font-size:24px;line-height:1.1}
 .stat .label{display:block}
 .sheet{position:relative;background:var(--surface);border-radius:18px;padding:12px 24px;box-shadow:0 0 0 1px var(--line),0 4px 0 var(--cap-edge),0 18px 30px -22px color-mix(in oklab,var(--fg) 30%,transparent);cursor:text}
-.vp{position:relative;overflow:hidden;font-family:var(--font-mono);font-size:clamp(19px,2vw,26px);line-height:1.7;height:calc(1.7em * 3);font-weight:500}
+.vp{position:relative;overflow:hidden;font-family:var(--font-mono);font-size:clamp(19px,2.2vw,29px);line-height:1.7;height:calc(1.7em * 3);font-weight:500}
 .txt{position:relative;transition:transform 140ms ease;will-change:transform}
 .w{display:inline-block;white-space:pre}
 .c{display:inline-block;color:var(--muted);white-space:pre}
@@ -151,15 +152,24 @@ kbd{font:500 12px var(--font-mono);padding:1px 6px;border-radius:5px;background:
 .pause{position:absolute;inset:0;display:grid;place-items:center;text-align:center;padding:16px;border-radius:18px;background:color-mix(in oklab,var(--surface) 90%,transparent);backdrop-filter:blur(3px);font-weight:700;cursor:pointer;z-index:2}
 .tip{display:flex;gap:14px;align-items:center;justify-content:space-between;margin-top:14px;padding:12px 16px;border-radius:var(--radius);background:var(--surface);box-shadow:0 0 0 1px var(--line);font-size:15px}
 .tip p{min-width:0}
-.hint{min-height:24px;margin:12px 0 6px;text-align:center;color:var(--fg-2);font-size:16px}
+.hint{display:table;box-sizing:border-box;min-height:36px;margin:14px auto 12px;padding:7px 16px;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--line),0 2px 0 var(--cap-edge);text-align:center;color:var(--fg-2);font:500 15px/1.45 var(--font-display)}
+.hint:empty{visibility:hidden}
 .hint b{color:var(--fg)}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--fc);margin-right:8px;vertical-align:baseline}
-.kbwrap{display:grid;gap:2px;max-width:780px;margin-inline:auto}
+.kbwrap{display:grid;gap:0;max-width:max(560px,min(1060px,calc((100dvh - 440px) * 1.95)));margin-inline:auto}
+.kbwrap svg.kb{box-sizing:border-box;padding:1.8% 1.8% 1.4%;border-radius:clamp(14px,2.4vw,26px);background:linear-gradient(180deg,var(--deck-a),var(--deck-b));box-shadow:inset 0 1px 0 var(--deck-hi),inset 0 -3px 0 rgba(0,0,0,.12),0 2px 0 var(--cap-edge),0 26px 44px -26px rgba(20,28,60,.5)}
+.kbwrap svg.hands{width:80%;margin:8px auto 0}
+dialog.movedlg{border:0;padding:0;border-radius:18px;background:var(--surface);color:var(--fg);width:min(520px,calc(100vw - 24px));box-shadow:0 0 0 1px var(--line),0 24px 60px -20px color-mix(in oklab,var(--fg) 45%,transparent);overflow:hidden}
+dialog.movedlg::backdrop{background:color-mix(in oklab,var(--bg) 70%,transparent);backdrop-filter:blur(2px)}
+dialog.movedlg .panel{border-radius:0;box-shadow:none}
+@media (max-width:560px){.kbwrap svg.hands{width:100%}}
 svg.kb,svg.hands{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none}
 svg.hands{margin-top:-4px}
 
 /* keyboard svg */
-.kb .edge{fill:var(--cap-edge)}
+.kb .edge{fill:color-mix(in oklab,var(--fc,var(--f-thumb)) 24%,var(--cap-edge))}
+.kb .mod .edge{fill:var(--cap-edge)}
+.kb .shine{pointer-events:none;opacity:var(--shine)}
 .kb .cap{fill:color-mix(in oklab,var(--fc,var(--f-thumb)) 16%,var(--surface))}
 .kb .mod .cap{fill:var(--surface-2)}
 .kb text{font-family:var(--font-display);font-weight:600;fill:var(--fg-2);pointer-events:none}
@@ -173,8 +183,9 @@ svg.hands{margin-top:-4px}
 .kb .key.next .cap{fill:var(--fc)}
 .kb .key.next text{fill:var(--surface)}
 .kb .key.next .bump{fill:var(--surface);opacity:.8}
-.kb .key.next .top{transform:translateY(-2px)}
-.kb .key.down .top{transform:translateY(2px)}
+.kb .key.next .top{transform:translateY(-2px);filter:drop-shadow(0 0 7px color-mix(in oklab,var(--fc) 65%,transparent))}
+.kb .key.next .edge{fill:color-mix(in oklab,var(--fc) 62%,var(--shade))}
+.kb .key.down .top{transform:translateY(3px);filter:none}
 .kb .key.err .cap{fill:var(--error)}
 .kb .key.err text{fill:var(--surface)}
 .kb[data-mode="map"] .cap{fill:var(--surface-2)}
@@ -183,9 +194,10 @@ svg.hands{margin-top:-4px}
 .kb[data-mode="map"] .key.learned text{fill:var(--surface)}
 .kb[data-mode="map"] .key.learned .bump{fill:var(--surface)}
 .kb[data-mode="map"] .key.upnext .ring{display:block}
-.hands .palm{fill:var(--surface-2);stroke:var(--line);stroke-width:1.5}
+.hands .palm{fill:color-mix(in oklab,var(--fg) 5%,var(--surface));stroke:var(--line);stroke-width:1}
 .hands .hf{fill:color-mix(in oklab,var(--fc) 16%,var(--surface));stroke:color-mix(in oklab,var(--fc) 40%,var(--line));stroke-width:1.5}
-.hands .hf.on{fill:var(--fc);stroke:var(--fc)}
+.hands .hf{transition:fill .15s,stroke .15s}
+.hands .hf.on{fill:var(--fc);stroke:var(--fc);filter:drop-shadow(0 4px 8px color-mix(in oklab,var(--fc) 55%,transparent))}
 
 /* summary, results */
 .result{display:grid;gap:20px}.result .card{display:grid;gap:20px;padding:28px}
@@ -1365,6 +1377,7 @@ function weakestKey(){
 
 /* ============================ KEYBOARD + HANDS SVG ============================ */
 const U=60,G=3;
+let KSID="ks0",KSN=0;  /* the sheen gradient id of the keyboard being built */
 function keySVG(k){
   const x=k.x*U,y=k.row*U,w=k.w*U,h=U-2*G;
   const cls=["key"];if(k.mod&&!k.sh)cls.push("mod");
@@ -1373,11 +1386,11 @@ function keySVG(k){
   if(k.L){
     const x0=x+G,x1=x+w-G,xm=x+G+.25*U,yt=y+G,yn=y+U-G,yb=y+2*U-G,r=8;
     const d="M"+(x0+r)+","+yt+" H"+(x1-r)+" Q"+x1+","+yt+" "+x1+","+(yt+r)+" V"+(yb-r)+" Q"+x1+","+yb+" "+(x1-r)+","+yb+" H"+(xm+r)+" Q"+xm+","+yb+" "+xm+","+(yb-r)+" V"+(yn+r)+" Q"+xm+","+yn+" "+(xm-r)+","+yn+" H"+(x0+r)+" Q"+x0+","+yn+" "+x0+","+(yn-r)+" V"+(yt+r)+" Q"+x0+","+yt+" "+(x0+r)+","+yt+" Z";
-    shape='<path class="cap" d="'+d+'"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,3)"/>';
+    shape='<path class="cap" d="'+d+'"/><path class="shine" d="'+d+'" fill="url(#'+KSID+')"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,4)"/>';
     txt='<text class="ml" x="'+(x+w-G-9)+'" y="'+(y+2*U-G-9)+'" text-anchor="end">return</text>';
   }else{
-    shape='<rect class="cap" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="8"/>';
-    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+3)+'" width="'+(w-2*G)+'" height="'+h+'" rx="8"/>';
+    shape='<rect class="cap" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/><rect class="shine" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9" fill="url(#'+KSID+')"/>';
+    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+4)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/>';
     if(k.mod){const a=k.a==="e"?"end":k.a==="c"?"middle":"start",tx=k.a==="e"?x+w-G-9:k.a==="c"?x+w/2:x+G+9;
       txt='<text class="ml" x="'+tx+'" y="'+(y+G+h-8)+'" text-anchor="'+a+'">'+esc(k.mod)+'</text>'}
     else if(k.sh&&typeof k.sh==="string"&&!/^[A-Z]$/.test(k.sh)){
@@ -1393,8 +1406,9 @@ function keySVG(k){
 function makeKeyboard(svg,mode){
   const c={svg,els:{},st:{next:[],learned:[],upnext:[]},timers:{}};
   c.build=()=>{
-    const lay=LAY();svg.setAttribute("viewBox","0 0 900 300");svg.setAttribute("data-mode",mode);
-    svg.innerHTML=lay.keys.map(keySVG).join("");c.els={};
+    const lay=LAY();svg.setAttribute("viewBox","0 0 900 304");svg.setAttribute("data-mode",mode);
+    KSID="ks"+(++KSN);
+    svg.innerHTML='<defs><linearGradient id="'+KSID+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'+lay.keys.map(keySVG).join("");c.els={};
     svg.querySelectorAll(".key").forEach(g=>{c.els[g.getAttribute("data-id")]=g});c.apply();
   };
   c.apply=()=>{
@@ -3002,7 +3016,7 @@ document.addEventListener("keydown",e=>{
 let wlChecked=false;
 statusHooks.push(s=>{
   if(wlChecked||s==="connecting")return;wlChecked=true;
-  if(S.seenTips.welcome)return;
+  if(S.seenTips.welcome||MOVE)return;
   if(wlHasProgress()){S.seenTips.welcome=true;writeLocal();return}
   showWelcome(1);
 });
@@ -3568,7 +3582,75 @@ view.addEventListener("click",e=>{
   else if(a==="pm-mine-rm"){mtSave(mtList().filter(x=>x.id!==b.dataset.id));renderPractice()}
   else if(a==="pm-mine-back")renderPractice();
 });
+/* ============================ MOVE FROM THE OLD ADDRESS ============================ */
+/* The website moved from home-row-lime.vercel.app to homerow.sebthe.dev. Progress lives in each address's own browser
+   storage, so the old address forwards it once inside the URL fragment (a fragment is never sent to a server). The new
+   address asks before combining it with what is already saved here; nothing is replaced. */
+const OLD_HOST="home-row-lime.vercel.app",NEW_APP="https://homerow.sebthe.dev/app/";
+let MOVE=null;
+function forwardFromOldHost(){
+  if(location.hostname!==OLD_HOST)return false;
+  let frag="";
+  try{
+    const s=localStorage.getItem(LSK),c=localStorage.getItem(COACH_LS);
+    if(s||c)frag="#move="+encodeURIComponent(JSON.stringify({s:s?JSON.parse(s):null,c:c?JSON.parse(c):null}));
+  }catch(e){}
+  location.replace(NEW_APP+frag);
+  return true;
+}
+/* reads #move=… once and removes it from the address bar */
+function readMove(){
+  if(location.hash.indexOf("#move=")!==0)return;
+  try{
+    const o=JSON.parse(decodeURIComponent(location.hash.slice(6)));
+    if(isObj(o)){
+      const s=o.s?sanitize(o.s):null,c=isObj(o.c)?sanitizeCoach(o.c):null;
+      const lessons=s?LESSONS.filter(l=>s.lessons[l.n]&&s.lessons[l.n].done).length:0;
+      const mins=s?Math.round(Object.values(s.days).reduce((a,d)=>a+(fin(d.ms)?d.ms:0),0)/60000):0;
+      const coach=c?c.lessons.length:0;
+      if(lessons||mins||(s&&s.tests.length)||coach)MOVE={s,c:coach?o.c:null,lessons,mins,coach};
+    }
+  }catch(e){}
+  try{history.replaceState(null,"",location.pathname+location.search+"#learn")}catch(e){}
+}
+function moveSummary(){
+  const p=[];
+  if(MOVE.lessons)p.push(MOVE.lessons+(MOVE.lessons===1?" lesson":" lessons")+" passed");
+  if(MOVE.mins)p.push(MOVE.mins+(MOVE.mins===1?" minute":" minutes")+" of practice");
+  if(MOVE.coach)p.push(MOVE.coach+(MOVE.coach===1?" lesson":" lessons")+" from Claude");
+  return p.length>1?p.slice(0,-1).join(", ")+" and "+p[p.length-1]:p[0]||"your progress";
+}
+function showMove(){
+  if(!MOVE)return;
+  /* already brought over (the old link was opened again): nothing new, so no question */
+  const have=new Set((COACH.lessons||[]).map(l=>l.id)),newCoach=MOVE.c&&(MOVE.c.lessons||[]).some(l=>isObj(l)&&!have.has(l.id));
+  if(!newCoach&&(!MOVE.s||stable(merge(S,MOVE.s))===stable(merge(S,S)))){MOVE=null;return}
+  const d=document.createElement("dialog");d.className="movedlg";d.setAttribute("aria-labelledby","move-t");
+  d.innerHTML=panel({flat:1,eyebrow:"New address",title:'<span id="move-t">Bring your progress here?</span>',
+    msg:"Home Row moved to homerow.sebthe.dev. Your progress from the old address came along: "+esc(moveSummary())+". It is added to anything already saved here, so nothing is lost.",
+    foot:'<button type="button" class="btn quiet" data-mv="no">Not now</button><button type="button" class="btn" data-mv="yes" autofocus>Bring it over</button>'});
+  $("app").appendChild(d);
+  const done=yes=>{
+    const m=MOVE;MOVE=null;d.close();d.remove();
+    if(yes){
+      if(m.s){S=merge(S,m.s);save()}
+      if(m.c){
+        const cur=isObj(COACH_RAW)?clone(COACH_RAW):{},ids=new Set((Array.isArray(cur.lessons)?cur.lessons:[]).map(l=>isObj(l)&&l.id));
+        cur.lessons=(Array.isArray(cur.lessons)?cur.lessons:[]).concat((m.c.lessons||[]).filter(l=>isObj(l)&&!ids.has(l.id))).slice(0,20);
+        if(!cur.note&&m.c.note)cur.note=m.c.note;
+        applyCoachRaw(cur,true);
+      }
+      renderRing();route();
+      toast({icon:'<span class="medal" style="--ac:var(--ok);width:36px;height:36px">'+ico("check",20)+'</span>',title:"Progress moved",sub:"Everything from the old address is here."});
+    }else if(!S.seenTips.welcome&&!wlHasProgress())showWelcome(1);
+  };
+  d.addEventListener("click",e=>{const b=e.target.closest("[data-mv]");if(b)done(b.dataset.mv==="yes")});
+  d.addEventListener("cancel",e=>{e.preventDefault();done(false)});
+  d.showModal();
+}
 /* ============================ BOOT ============================ */
+if(forwardFromOldHost())return;
+readMove();
 S=loadLocal();loadCoach();
 document.getElementById("tabs").addEventListener("click",e=>{
   const b=e.target.closest(".tab");if(!b)return;
@@ -3581,6 +3663,7 @@ $("touch-x").addEventListener("click",()=>{$("touch-note").hidden=true});
 $("brand-mark").innerHTML=logoSVG(30);addFavicon();
 wireSettings();syncSettingsUI();renderRing();route();
 setSaveStatus("connecting");connectAccount();
+showMove();
 
 })();
 </script>
