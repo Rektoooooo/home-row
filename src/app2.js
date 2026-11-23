@@ -168,6 +168,7 @@ function weakestKey(){
 
 /* ============================ KEYBOARD + HANDS SVG ============================ */
 const U=60,G=3;
+let KSID="ks0",KSN=0;  /* the sheen gradient id of the keyboard being built */
 function keySVG(k){
   const x=k.x*U,y=k.row*U,w=k.w*U,h=U-2*G;
   const cls=["key"];if(k.mod&&!k.sh)cls.push("mod");
@@ -176,11 +177,11 @@ function keySVG(k){
   if(k.L){
     const x0=x+G,x1=x+w-G,xm=x+G+.25*U,yt=y+G,yn=y+U-G,yb=y+2*U-G,r=8;
     const d="M"+(x0+r)+","+yt+" H"+(x1-r)+" Q"+x1+","+yt+" "+x1+","+(yt+r)+" V"+(yb-r)+" Q"+x1+","+yb+" "+(x1-r)+","+yb+" H"+(xm+r)+" Q"+xm+","+yb+" "+xm+","+(yb-r)+" V"+(yn+r)+" Q"+xm+","+yn+" "+(xm-r)+","+yn+" H"+(x0+r)+" Q"+x0+","+yn+" "+x0+","+(yn-r)+" V"+(yt+r)+" Q"+x0+","+yt+" "+(x0+r)+","+yt+" Z";
-    shape='<path class="cap" d="'+d+'"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,3)"/>';
+    shape='<path class="cap" d="'+d+'"/><path class="shine" d="'+d+'" fill="url(#'+KSID+')"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,4)"/>';
     txt='<text class="ml" x="'+(x+w-G-9)+'" y="'+(y+2*U-G-9)+'" text-anchor="end">return</text>';
   }else{
-    shape='<rect class="cap" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="8"/>';
-    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+3)+'" width="'+(w-2*G)+'" height="'+h+'" rx="8"/>';
+    shape='<rect class="cap" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/><rect class="shine" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9" fill="url(#'+KSID+')"/>';
+    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+4)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/>';
     if(k.mod){const a=k.a==="e"?"end":k.a==="c"?"middle":"start",tx=k.a==="e"?x+w-G-9:k.a==="c"?x+w/2:x+G+9;
       txt='<text class="ml" x="'+tx+'" y="'+(y+G+h-8)+'" text-anchor="'+a+'">'+esc(k.mod)+'</text>'}
     else if(k.sh&&typeof k.sh==="string"&&!/^[A-Z]$/.test(k.sh)){
@@ -196,8 +197,9 @@ function keySVG(k){
 function makeKeyboard(svg,mode){
   const c={svg,els:{},st:{next:[],learned:[],upnext:[]},timers:{}};
   c.build=()=>{
-    const lay=LAY();svg.setAttribute("viewBox","0 0 900 300");svg.setAttribute("data-mode",mode);
-    svg.innerHTML=lay.keys.map(keySVG).join("");c.els={};
+    const lay=LAY();svg.setAttribute("viewBox","0 0 900 304");svg.setAttribute("data-mode",mode);
+    KSID="ks"+(++KSN);
+    svg.innerHTML='<defs><linearGradient id="'+KSID+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".75"/><stop offset=".55" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>'+lay.keys.map(keySVG).join("");c.els={};
     svg.querySelectorAll(".key").forEach(g=>{c.els[g.getAttribute("data-id")]=g});c.apply();
   };
   c.apply=()=>{
