@@ -254,7 +254,8 @@ export function installEngine(sink: HTMLTextAreaElement) {
   };
   const onVis = () => { if (document.hidden && EX && !EX.done) EX.pause(); };
   const onKey = (e: KeyboardEvent) => {
-    if (dialogOpen()) return;
+    /* a dialog that just closed on this Escape has already handled it (Radix prevents the default) */
+    if (dialogOpen() || (e.key === "Escape" && e.defaultPrevented)) return;
     if (S.settings.soundPack !== "off" && !actx) audio();
     if (EX && !EX.done) {
       if (EX.paused) { if (!["Shift", "Control", "Alt", "Meta", "CapsLock"].includes(e.key)) { EX.resume(); focusSink(); } if (e.key === "Escape" || e.key === "Tab") e.preventDefault(); return; }

@@ -1,0 +1,45 @@
+/* Phase 5: settings, share, move and toast chrome. The welcome, toast, medal, confetti and share-picture rules already live in
+   app.css (carried over from legacy/src/p1.html); this file only adds what the shadcn Dialog, Switch and Sonner need to look like them. */
+/* the dialog backdrop: legacy blurred page tint */
+[data-slot="dialog-overlay"]{background:color-mix(in oklab,var(--bg) 70%,transparent);backdrop-filter:blur(2px)}
+[data-slot="dialog-content"].dlg,[data-slot="dialog-content"].movedlg{box-shadow:0 0 0 1px var(--line),0 24px 60px -20px color-mix(in oklab,var(--fg) 45%,transparent);font:16px/1.55 var(--font-body)}
+.movedlg .panel{border-radius:0;box-shadow:none}
+.dlg-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px 14px 24px;border-bottom:1px solid var(--line);background:var(--surface);flex:none}
+.dlg-head h2{font-size:22px}
+.dlg-body{overflow:auto;padding:6px 24px 24px;display:grid;gap:0}
+.dlg-body>[data-slot="separator"]{background:var(--line)}
+.sgroup{display:grid;gap:16px;padding:18px 0}
+.sgroup>.label{margin:0;font-size:12px;font-family:var(--font-body);letter-spacing:.08em}
+.fld{display:grid;gap:6px;border:0;margin:0;padding:0;min-width:0;justify-items:start}
+.fld .t{font-weight:700}
+.hintx{font-size:13px;color:var(--muted-foreground)}
+.fld{justify-items:stretch}
+.fld .seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;width:100%;max-width:none}
+.fld .seg [role="radio"]{justify-content:center}
+.sw{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.sw>label{display:grid;gap:2px;min-width:0;cursor:pointer}
+.sw>label b{font-weight:700}
+.sw [data-slot="switch"]{background:var(--sunken);box-shadow:inset 0 0 0 1px var(--line)}
+.sw [data-slot="switch"][data-state="checked"]{background:var(--fg)}
+.sw [data-slot="switch-thumb"]{background:var(--surface)}
+.sw [data-slot="switch"]:focus-visible{outline:2px solid var(--fg);outline-offset:2px;box-shadow:inset 0 0 0 1px var(--line)}
+#settings .confirm .actions{display:flex;flex-wrap:wrap;gap:8px}
+.sh-body{gap:14px;padding:18px 24px 24px}
+.sh-pic{display:grid;place-items:center;min-height:120px}
+@media (max-width:560px){.sh-body{padding:12px 16px 18px}.sh-foot{flex-direction:column-reverse}.sh-foot .btn{width:100%}}
+/* welcome sound step: the cards and "No sound" share one radio group */
+.wl-rg{display:block;width:100%}
+.wl-card,.wl-off{height:auto}
+.wl-card[data-state="on"]{box-shadow:0 0 0 2px var(--fg),0 3px 0 var(--cap-edge)}
+.wl-off[data-state="on"]{color:var(--fg);text-decoration:underline;text-underline-offset:4px}
+/* toasts: Sonner brings the stacking and the 4.5 s timer, the .toast card is the legacy one */
+[data-sonner-toaster]{--width:360px}
+[data-sonner-toast][data-styled="false"]{width:var(--width)}
+.toast{animation:none}
+.toast-ic{display:inline-flex;flex:none}
+.wl-card{justify-content:normal;justify-items:start;align-items:start;align-content:start;text-align:left;white-space:normal;min-width:0;font-weight:inherit}
+.wl-off{justify-content:center;white-space:normal}
+.sgroup{padding:14px 0}
+.fld .seg [role="radio"]{padding-inline:10px;white-space:nowrap}
+@media (max-width:560px){.fld .seg [role="radio"]{padding-inline:4px;font-size:14px}}
+@media (max-width:560px){.fld .seg{display:flex;flex-wrap:wrap}.fld .seg [role="radio"]{flex:1 1 auto}}

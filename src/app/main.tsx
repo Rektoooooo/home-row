@@ -3,21 +3,27 @@ import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import "@/styles/globals.css";
 import "@/styles/app.css";
+import "@/styles/finish.css";
 import { watchTheme } from "@/lib/theme";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { setS } from "@/core/state";
 import { loadLocal } from "@/core/store";
 import { connectAccount, installCoreHooks, loadCoach, setSaveStatus } from "@/core/sync";
 import { forwardFromOldHost, readMove } from "@/core/move";
+import { installUiHooks } from "@/ui/celebrate";
+import { installWelcomeHook } from "@/ui/welcome";
+import { startMove } from "@/ui/move";
+import { showToast } from "@/ui/celebrate";
 import { App } from "./App";
 
-/* TODO(phase5): showMove() dialog; forward and read still run so the old address keeps working */
 if (!forwardFromOldHost()) {
   readMove();
   watchTheme();
   setS(loadLocal());
   loadCoach();
   installCoreHooks();
+  installUiHooks();
+  installWelcomeHook();
   createRoot(document.getElementById("root")!).render(
     <StrictMode>
       <TooltipProvider delayDuration={200}><App /></TooltipProvider>
@@ -25,4 +31,7 @@ if (!forwardFromOldHost()) {
   );
   setSaveStatus("connecting");
   connectAccount();
+  startMove();
+  /* dev only: lets the screenshot script show a toast */
+  if (import.meta.env.DEV) (window as any).__hr = { toast: showToast };
 }

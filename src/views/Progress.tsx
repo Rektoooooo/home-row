@@ -17,6 +17,8 @@ import { dLabel, heatMap, keyAcc, keyWpm, lessonDone, minutesToday, streak, stre
 import { slowPairs, POOL_NAME } from "@/core/generate";
 import { fmtMin, levelInfo, mondayOf, weekStats, weekTitle } from "@/core/rewards";
 import { resetAll } from "@/core/store";
+import { weekCard } from "@/core/shareCard";
+import { openShare } from "@/ui/share";
 import { useProgress, useSaveStatus } from "@/lib/progress";
 import { goLesson, navigate } from "@/lib/route";
 import { useGrown } from "@/ui/grown";
@@ -52,7 +54,7 @@ function Recap() {
           <Pstat num={c.acc == null ? "–" : Math.round(c.acc * 100) + "%"} label="Accuracy" sub={da == null ? undefined : <Delta d={da} txt={Math.abs(da) + "%"} /> as any} />
           <Pstat num={c.tests} label="Tests" sub={c.best ? "best " + Math.round(c.best) + " WPM" : undefined} />
         </>}
-        foot={/* TODO(phase5): share card dialog */ <Btn variant="outline" onClick={() => {}}>Share week</Btn>} />
+        foot={<Btn variant="outline" onClick={() => openShare(weekCard())}>Share week</Btn>} />
     </section>
   );
 }

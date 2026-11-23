@@ -9,6 +9,9 @@ import { S } from "@/core/state";
 import { settingChanged } from "@/core/store";
 import { dLabel, pctTxt } from "@/core/stats";
 import { POOL_NAME, paceFor, testChunk, recordTest, testChart, testOptsFromSettings, type TestCfg } from "@/core/flows";
+import { SHT } from "@/core/rewards";
+import { bestCard, testCard } from "@/core/shareCard";
+import { openShare } from "@/ui/share";
 import { useProgress } from "@/lib/progress";
 import { useEscape } from "@/lib/escape";
 import { HPanel, IncludeRow, Seg, mouseBlur } from "@/views/Practice";
@@ -62,8 +65,7 @@ function TestResults({ res, dur, o, isBest, onSettings, onAgain }: { res: any; d
         stats={<><Pstat lead num={Math.round(res.wpm)} label="WPM" sub={isBest ? "your best at " + dur + " s" : undefined} /><Pstat num={Math.round(res.raw)} label="Raw WPM" /><Pstat num={pctTxt(res.acc)} label="Accuracy" /><Pstat num={res.correct + " · " + res.mistakes} label="Correct · mistakes" /></>} statsCls="c4"
         foot={<>
           <Btn variant="outline" onClick={onSettings}>Change settings</Btn>
-          {/* TODO(phase5): opens the share dialog (sh-test) */}
-          <Btn variant="outline">Share</Btn>
+          {SHT ? <Btn variant="outline" onClick={() => openShare(testCard(SHT))}>Share</Btn> : null}
           <Btn primary hint={ENTER} onClick={onAgain}>Try again</Btn>
         </>}>
         <div>
@@ -116,7 +118,7 @@ export function TestView() {
         </HPanel>
         <HPanel eyebrow="Your results" foot={rows.length ? <Button variant="ghost" asChild><a href="#progress">See your speed trend</a></Button> : undefined}>
           <div className="bests">{tiles}</div>
-          {(S.bests["test" + st.tDur] || 0) > 0 ? <div>{/* TODO(phase5): opens the share dialog (sh-best) */}<Btn variant="ghost" size="sm"><ArrowUp size={14} aria-hidden="true" />Share best · {st.tDur} s</Btn></div> : null}
+          {(S.bests["test" + st.tDur] || 0) > 0 ? <div><Btn variant="ghost" size="sm" onClick={() => openShare(bestCard())}><ArrowUp size={14} aria-hidden="true" />Share best · {st.tDur} s</Btn></div> : null}
           <div><span className="label">Recent tests</span>
             {rows.length ? (
               <div className="tblwrap"><table className="tbl tt rt"><thead><tr><th>Date</th><th>Time</th><th>Words</th><th>WPM</th><th>Accuracy</th></tr></thead><tbody>

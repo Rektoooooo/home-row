@@ -11,6 +11,14 @@ import { CoachView } from "@/views/Coach";
 import { GuideView } from "@/views/Guide";
 import { useRoute } from "@/lib/route";
 import { installEngine } from "@/ui/engine";
+import { Welcome } from "@/components/Welcome";
+import { ShareDialog } from "@/components/ShareDialog";
+import { MoveDialog } from "@/components/MoveDialog";
+import { TestRun } from "@/views/Test";
+import { watchCelebrate } from "@/ui/celebrate";
+import { useWelcome, wlAbandonCheck, wlCheckBack, wlCheckDone } from "@/ui/welcome";
+
+const CHECK_CFG = { pool: "c200", caps: false, punct: false, nums: false };
 
 const VIEWS: Record<string, () => React.JSX.Element> = { practice: PracticeView, test: TestView, progress: ProgressView, coach: CoachView, guide: GuideView };
 
@@ -23,19 +31,26 @@ export function App() {
   /* the touch note goes away on the first key press */
   useEffect(() => { const f = () => setTouch(false); document.addEventListener("keydown", f, { once: true }); return () => document.removeEventListener("keydown", f); }, []);
   useEffect(() => { window.scrollTo(0, 0); }, [tab, nonce]);
+  useEffect(() => watchCelebrate(), []);
+  /* the welcome's typing check takes over the main area; leaving the screen by any route abandons it */
+  const wel = useWelcome();
+  useEffect(() => { wlAbandonCheck(); }, [tab, nonce]);
   return (
     <div className="hr-shell" id="app">
       <Header onSettings={() => setSettings(true)} />
       <div className="col">
         {touch ? <div className="note" id="touch-note"><span>Touch typing needs a physical keyboard. Connect one to practise here.</span><Button variant="outline" size="sm" onClick={() => setTouch(false)}>Dismiss</Button></div> : null}
         <main id="view" tabIndex={-1}>
-          {tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : (() => { const V = VIEWS[tab]; return <V key={tab + nonce} />; })()}
+          {wel.checking ? <TestRun key="wl-check" dur={60} o={CHECK_CFG} crumb="Welcome · Typing check" baseline onBack={wlCheckBack} onDone={wlCheckDone} /> :
+          tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : (() => { const V = VIEWS[tab]; return <V key={tab + nonce} />; })()}
         </main>
       </div>
       <textarea id="sink" ref={sink} aria-label="Typing input" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} tabIndex={-1} />
       <SettingsDialog open={settings} onOpenChange={setSettings} />
-      {/* TODO(phase5): welcome flow, move-from-old-address dialog, toasts, confetti, sounds UI */}
-      <Toaster />
+      <Welcome />
+      <ShareDialog />
+      <MoveDialog />
+      <Toaster position="bottom-right" visibleToasts={3} duration={4500} />
     </div>
   );
 }
