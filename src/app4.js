@@ -125,6 +125,7 @@ function startLesson(n){
 function runStep(){
   const N=RUN.texts.length;
   mountStage({crumb:RUN.custom?"Claude · "+RUN.title+" · Step "+RUN.step+" of "+N+" · "+RUN.names[RUN.step-1]:"Lesson "+RUN.n+" · Step "+RUN.step+" of "+N+" · "+RUN.names[RUN.step-1],text:RUN.texts[RUN.step-1],mode:S.settings.stop?"stop":"free",
+    focus:RUN.custom?null:[...ctx(RUN.n).all],
     onFinish:stepDone});
   UI.escape=null;
 }

@@ -89,7 +89,8 @@ function createExercise(o){
   /* only the keys this text uses stay bright on the keyboard */
   const used=new Set();
   const focusKeys=s=>{[...s].forEach(ch=>{if(ch!=="\n")used.add(ch)});const ids=idsFor([...used]);if(/\n/.test(s)||o.code)ids.push("Enter");kb.set({learned:[...new Set(kb.st.learned.concat(ids))]});kb.svg.classList.add("focus")};
-  focusKeys(text);
+  /* bright: the keys you know (in a lesson, its keys so far) plus anything the text uses */
+  focusKeys(text+(o.focus||[...learnedChars()]).join(""));
   /* render text */
   let html="";
   /* o.code: one block per line; a newline is its own .c.nl cell, leading spaces are .c.ind. xc keeps those extra classes through paint() */

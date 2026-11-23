@@ -182,7 +182,13 @@ function wordText(c,len,review){
     if(withNew.length&&(Math.random()<.68||!others.length))return pickF(withNew);
     return pickF(others.length?others:cand);
   };
-  const t=fill(next,len,40);decorate(t,c,len>=100?3:2);return t.join(" ");
+  const t=fill(next,len,40);
+  /* every key of the lesson shows up at least once: a few keys (J above all) have almost no words */
+  c.letters.filter(k=>!t.some(w=>w.includes(k))).forEach(k=>{
+    const pool=cand.filter(w=>w.includes(k)),w=pool.length?pick(pool):pw(c.letters,{min:3,max:5,must:k});
+    t.splice(1+rnd(t.length),0,w);
+  });
+  decorate(t,c,len>=100?3:2);return t.join(" ");
 }
 function genReview(c,s){
   if(s===1){const t=fill(()=>pw(c.letters,{min:3,max:5,must:wpick(c.letters,weakW)}),45,14);return t.join(" ")}

@@ -53,6 +53,9 @@ const WORDS_MORE = (
   "tea teacher team test ticket tooth top town toy tree trip truck uncle unit valley value village voice wall wheel " +
   "wind window wing winter wood yard keyboard finger screen habit rhythm practice progress goal " +
   "ash dash flash gas lad lag salad flask lash " +
+  // J has almost no common words, so these keep it in the word steps
+  "jag jags jar jam jet jog jaw jab jug jig jest jolt jade jail jazz joke jury judge jacket jelly jeans jewel junk " +
+  "adjust object reject subject project " +
   // adjectives
   "able afraid alive alone angry bad basic best better black blue bold brave bright broad brown busy calm careful " +
   "cheap clear clever cold common cool correct dark dear deep different dirty easy empty equal exact fair false " +

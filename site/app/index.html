@@ -870,6 +870,9 @@ const WORDS_MORE = (
   "tea teacher team test ticket tooth top town toy tree trip truck uncle unit valley value village voice wall wheel " +
   "wind window wing winter wood yard keyboard finger screen habit rhythm practice progress goal " +
   "ash dash flash gas lad lag salad flask lash " +
+  // J has almost no common words, so these keep it in the word steps
+  "jag jags jar jam jet jog jaw jab jug jig jest jolt jade jail jazz joke jury judge jacket jelly jeans jewel junk " +
+  "adjust object reject subject project " +
   // adjectives
   "able afraid alive alone angry bad basic best better black blue bold brave bright broad brown busy calm careful " +
   "cheap clear clever cold common cool correct dark dear deep different dirty easy empty equal exact fair false " +
@@ -1138,7 +1141,13 @@ function wordText(c,len,review){
     if(withNew.length&&(Math.random()<.68||!others.length))return pickF(withNew);
     return pickF(others.length?others:cand);
   };
-  const t=fill(next,len,40);decorate(t,c,len>=100?3:2);return t.join(" ");
+  const t=fill(next,len,40);
+  /* every key of the lesson shows up at least once: a few keys (J above all) have almost no words */
+  c.letters.filter(k=>!t.some(w=>w.includes(k))).forEach(k=>{
+    const pool=cand.filter(w=>w.includes(k)),w=pool.length?pick(pool):pw(c.letters,{min:3,max:5,must:k});
+    t.splice(1+rnd(t.length),0,w);
+  });
+  decorate(t,c,len>=100?3:2);return t.join(" ");
 }
 function genReview(c,s){
   if(s===1){const t=fill(()=>pw(c.letters,{min:3,max:5,must:wpick(c.letters,weakW)}),45,14);return t.join(" ")}
@@ -1532,7 +1541,8 @@ function createExercise(o){
   /* only the keys this text uses stay bright on the keyboard */
   const used=new Set();
   const focusKeys=s=>{[...s].forEach(ch=>{if(ch!=="\n")used.add(ch)});const ids=idsFor([...used]);if(/\n/.test(s)||o.code)ids.push("Enter");kb.set({learned:[...new Set(kb.st.learned.concat(ids))]});kb.svg.classList.add("focus")};
-  focusKeys(text);
+  /* bright: the keys you know (in a lesson, its keys so far) plus anything the text uses */
+  focusKeys(text+(o.focus||[...learnedChars()]).join(""));
   /* render text */
   let html="";
   /* o.code: one block per line; a newline is its own .c.nl cell, leading spaces are .c.ind. xc keeps those extra classes through paint() */
@@ -1861,6 +1871,7 @@ function startLesson(n){
 function runStep(){
   const N=RUN.texts.length;
   mountStage({crumb:RUN.custom?"Claude · "+RUN.title+" · Step "+RUN.step+" of "+N+" · "+RUN.names[RUN.step-1]:"Lesson "+RUN.n+" · Step "+RUN.step+" of "+N+" · "+RUN.names[RUN.step-1],text:RUN.texts[RUN.step-1],mode:S.settings.stop?"stop":"free",
+    focus:RUN.custom?null:[...ctx(RUN.n).all],
     onFinish:stepDone});
   UI.escape=null;
 }
