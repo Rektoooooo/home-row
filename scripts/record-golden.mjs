@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 /* Records golden fixtures from the legacy DEBUG build (window.App) for the TypeScript core port.
  *
- *   1. serve the legacy debug build, e.g.:  cd local && python3 -m http.server 8765      (legacy/build.sh writes local/index.html)
+ *   The vanilla app was removed after the switch-over; it lives on at git tag `vanilla-final`. To re-record:
+ *   0. git worktree add /tmp/hr-vanilla vanilla-final && sh /tmp/hr-vanilla/build.sh   (writes /tmp/hr-vanilla/local/index.html)
+ *   1. serve that debug build, e.g.:  cd /tmp/hr-vanilla/local && python3 -m http.server 8765
  *   2. node scripts/record-golden.mjs        (LEGACY_URL overrides http://localhost:8765/)
  *
  * Every recorded call runs with a seeded Math.random (mulberry32), a fixed clock and the UTC time zone, on a synthetic

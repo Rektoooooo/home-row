@@ -23,40 +23,51 @@ A free touch-typing trainer that runs in the browser. Learn to type with all ten
 
 Progress is saved in your browser. There is no account and no server.
 
+## Stack
+
+Vite, React 19, TypeScript, Tailwind CSS 4 and [shadcn/ui](https://ui.shadcn.com) (Radix), with Lucide icons and
+Sonner toasts. Vitest for tests, Playwright for end-to-end checks.
+
 ## Layout
 
 ```
-src/        the app, in parts (app1.js … app11.js, p1.html for markup and CSS, words.js, texts.js)
-build.sh    joins the parts into the pages below
-site/       the website, served as is
-  index.html       landing page
-  app/index.html   the trainer (built)
-  assets/          icon, link preview image
-vercel.json static hosting settings for Vercel
-docs/       screenshots for this README
+index.html            landing page entry (prerendered at build time)
+app/index.html        trainer entry, served at /app/
+src/
+  core/               framework-free logic: lessons, text generation, progress store, scoring, achievements,
+                      coach, claude.ai sync, sounds, share card (golden tests in core/__golden__)
+  ui/                 imperative pieces that update on every keystroke: typing engine, SVG keyboard, count-up
+  components/         Header, Keyboard, TypingStage, dialogs (Settings, Welcome, Share, Move), charts
+  components/ui/      shadcn/ui components
+  views/              the tabs: Learn, Session, Practice, Test, Progress, Coach, Guide
+  landing/            the landing page sections and its typing demo
+  styles/             theme tokens (globals.css) and the hand-tuned CSS for keyboard, stage and charts
+public/assets/        icon, link preview image
+scripts/              prerender, claude.ai page build, golden recorder, end-to-end suites (scripts/e2e)
+docs/                 screenshots for this README
 ```
 
-## Build
+## Develop
 
 ```sh
-sh build.sh
+npm install
+npm run dev          # http://localhost:5173 (landing) and http://localhost:5173/app/ (trainer)
+npm test             # unit and golden tests
 ```
 
-This writes `site/app/index.html` (the website build), plus two outputs that stay out of the repo: `local/index.html`
-(a local preview with debug helpers) and `artifact/home-row.html` (the same app as a claude.ai Artifact page, where
-progress syncs to the Claude account and the in-app coach can ask Claude directly).
+End-to-end suites need a running server, for example `npx vite --port 5199`, then
+`REACT_URL=http://localhost:5199/app/ node scripts/e2e/phase3.mjs` (also `phase4a.mjs --quick`, `phase4b.mjs` and
+`phase5.mjs`; `phase6.mjs` checks the landing page against `npx vite preview --port 5204`).
 
-Needs `sh`, `python3` and `node` (the build syntax-checks the result).
-
-## Run locally
+## Build and deploy
 
 ```sh
-python3 -m http.server 8780 --directory site
+npm run build            # dist/: the website (landing prerendered, trainer at /app/)
+npm run build:artifact   # artifact/home-row.html: the trainer as one self-contained page for claude.ai
 ```
 
-Then open http://localhost:8780.
+Vercel builds the site on every push to `main` (see `vercel.json`); other branches get preview deployments.
+The claude.ai version is published from `artifact/home-row.html`. There, progress syncs to the Claude account and the
+Coach can ask Claude directly.
 
-## Deploy
-
-The site is static. Vercel serves the `site/` folder (see `vercel.json`); there is no build step on Vercel, so run
-`sh build.sh` and commit `site/` before pushing.
+The original vanilla JavaScript version is kept at the git tag `vanilla-final`.
