@@ -128,3 +128,8 @@
     @apply font-sans;
     }
 }
+/* claude.ai wraps the page in its own skeleton whose reset is unlayered (body{background:#fff;color:#000;
+   font:14px system-ui}), and unlayered rules beat Tailwind's @layer base. These are unlayered on purpose so the
+   theme's background, text colour and fonts win in both the website and the claude.ai page. */
+html, body { background: var(--background); color: var(--foreground); }
+body { font-family: var(--font-sans); font-size: 16px; line-height: 1.55; }
