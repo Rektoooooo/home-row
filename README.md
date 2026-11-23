@@ -2,7 +2,7 @@
 
 A free touch-typing trainer that runs in the browser. Learn to type with all ten fingers, without looking.
 
-**Try it:** [home-row-lime.vercel.app](https://home-row-lime.vercel.app)
+**Try it:** [homerow.sebthe.dev](https://homerow.sebthe.dev)
 
 ![The Home Row landing page: a typing demo over a keyboard](docs/screenshots/landing.webp)
 
