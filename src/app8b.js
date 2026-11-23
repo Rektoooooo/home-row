@@ -213,7 +213,7 @@ function syncWeeklyUI(){
   const off=$("set-coach-off"),on=$("set-coach-on");if(!off||!on)return;
   const gone=coachOff||WK.msg===WK_GONE,none=!SAMPLE&&!gone;
   on.hidden=none||gone;off.hidden=!(none||gone);
-  off.textContent=gone?WK_GONE:"Available when Home Row runs inside Claude.";
+  off.textContent=gone?WK_GONE:window.claude?"Available on the published link.":"Available when Home Row runs inside Claude.";
   $("set-weekly").checked=!!S.settings.weekly;
   const m=$("set-weekly-msg");if(m)m.textContent=gone?"":WK.msg;
 }
