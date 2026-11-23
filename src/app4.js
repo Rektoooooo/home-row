@@ -146,8 +146,8 @@ function stepDone(res){
 function showResults(){
   if(RUN.custom)return customResults();
   const n=RUN.n,L=LESSONS[n-1],a=RUN.agg;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
-  let stars=0;if(passed){stars=1;if(wpm>=L.wpm)stars=2;if(acc>=.98&&wpm>=L.wpm+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=L.wpm+5)stars=3}
   const r=S.lessons[n]||(S.lessons[n]={done:false,stars:0,wpm:0,acc:0,attempts:0,last:0});
   const wasDone=r.done,prevStars=r.stars;
   r.attempts++;r.last=Date.now();if(passed)r.done=true;r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);

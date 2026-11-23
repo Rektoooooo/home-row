@@ -25,6 +25,7 @@ window.App={state:()=>S,gen:genLesson,genStep,wpm:wpmCalc,LESSONS,charInfo,reach
   pool:poolLetters,focus:()=>focusKey(poolLetters()),chooseFocus:()=>chooseFocus(poolLetters()),seedPairs:m=>{Object.assign(S.pairs,m);S.pairsAt=Date.now();save()},slowPairs,pace:()=>({live:PACE_LIVE.size,ghost:EX&&EX.ghostPos?EX.ghostPos():null}),session:()=>SESSION,startSession,paceFor,genPractice,testChunk,practice:()=>PRI,render:()=>renderTab(),strength:strengthOf,
   mergeTest:(a,b)=>merge(sanitize(a),sanitize(b)),setStatus:s=>setSaveStatus(s),levelInfo,xpWords,ACH,checkAchievements,liveCheck,weekStats,drawShareCard,openShare,toast,confetti,testCard,weekCard,lastLv:()=>LASTLV,showWelcome,welcome:()=>WEL,save,cleanText,splitParts,TEXTS,SNIPPETS,BADDEAD,pmode:()=>pmode(),mtList,setState:o=>{S=sanitize(o);writeLocal()}};
 window.App.wk={run:weeklyRun,isoWeek,weekId,state:()=>({WK,coachOff,sample:!!SAMPLE,snap:COACH_SNAP,raw:COACH_RAW}),setCoachOff:v=>{coachOff=v;syncWeeklyUI()}};
+window.App.results=(n,agg)=>{RUN={n,step:3,texts:["","",""],names:["","",""],agg};showResults()};
 window.App.snd={KEYPACKS,noise,knock,jit,use:(c,g,b)=>{actx=c;mgain=g;nbuf=b}};
 /*DEBUG-END*/
 })();

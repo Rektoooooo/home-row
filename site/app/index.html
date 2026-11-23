@@ -1217,6 +1217,8 @@ function genLesson(n){
   for(let a=0;a<12;a++){r=[1,2,3].map(s=>genStep(n,s).trim());if(r.every(t=>t&&!BADDEAD.test(t)&&!/ {2}/.test(t)))return r}
   return r;
 }
+/* pass, stars and badges compare the same whole percent the screen shows (94.6% shows as 95% and counts as 95%) */
+const pctOf=a=>Math.round(a*100);
 function wpmCalc(chars,ms){return ms>0?(chars/5)/(ms/60000):0}
 
 /* ============================ STORAGE ============================ */
@@ -1892,8 +1894,8 @@ function stepDone(res){
 function showResults(){
   if(RUN.custom)return customResults();
   const n=RUN.n,L=LESSONS[n-1],a=RUN.agg;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
-  let stars=0;if(passed){stars=1;if(wpm>=L.wpm)stars=2;if(acc>=.98&&wpm>=L.wpm+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=L.wpm+5)stars=3}
   const r=S.lessons[n]||(S.lessons[n]={done:false,stars:0,wpm:0,acc:0,attempts:0,last:0});
   const wasDone=r.done,prevStars=r.stars;
   r.attempts++;r.last=Date.now();if(passed)r.done=true;r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);
@@ -2729,8 +2731,8 @@ function startCustom(id){
 }
 function customResults(){
   const a=RUN.agg,id=RUN.custom,title=RUN.title,target=S.settings.target;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
-  let stars=0;if(passed){stars=1;if(wpm>=target)stars=2;if(acc>=.98&&wpm>=target+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=target+5)stars=3}
   const r=S.custom[id]||(S.custom[id]={wpm:0,acc:0,stars:0,attempts:0,last:0});
   const prevStars=r.stars;
   r.attempts++;r.last=Date.now();r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);rewardsLesson(passed&&stars>prevStars);
@@ -3102,9 +3104,9 @@ const ACH=[
   {id:"wpm-30",title:"30 WPM",desc:"A test at 30 WPM or more, with 90% accuracy or better",cat:"speed",icon:"bolt",test:()=>testOk(30)},
   {id:"wpm-40",title:"40 WPM",desc:"A test at 40 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(40)},
   {id:"wpm-60",title:"60 WPM",desc:"A test at 60 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(60)},
-  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&t.acc>=.98)},
+  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&pctOf(t.acc)>=98)},
   {id:"home-strong",title:"Home row mastered",desc:"Make every home row key strong",cat:"accuracy",icon:"shield",test:()=>[..."asdfjkl;"].every(k=>{const v=strengthOf(S.keys[k]);return v!=null&&v>=1})},
-  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>t.wpm>S.baseline.wpm&&t.acc>=.95)},
+  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>Math.round(t.wpm)>Math.round(S.baseline.wpm)&&pctOf(t.acc)>=95)},
   {id:"goal-5",title:"Five good days",desc:"Reach your daily goal on 5 days",cat:"streak",icon:"calendar",test:()=>Object.values(S.days).filter(d=>d.ms>=S.settings.goal*60000).length>=5},
   {id:"level-5",title:"Level 5",desc:"Reach level 5",cat:"special",icon:"chevron",test:()=>levelInfo().level>=5},
   {id:"level-10",title:"Level 10",desc:"Reach level 10",cat:"special",icon:"chevron",test:()=>levelInfo().level>=10},

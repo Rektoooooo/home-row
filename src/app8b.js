@@ -118,8 +118,8 @@ function startCustom(id){
 }
 function customResults(){
   const a=RUN.agg,id=RUN.custom,title=RUN.title,target=S.settings.target;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
-  let stars=0;if(passed){stars=1;if(wpm>=target)stars=2;if(acc>=.98&&wpm>=target+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=target+5)stars=3}
   const r=S.custom[id]||(S.custom[id]={wpm:0,acc:0,stars:0,attempts:0,last:0});
   const prevStars=r.stars;
   r.attempts++;r.last=Date.now();r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);rewardsLesson(passed&&stars>prevStars);
