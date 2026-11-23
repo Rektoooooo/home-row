@@ -4,17 +4,15 @@ import { SettingsDialog } from "@/components/SettingsDialog";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/sonner";
 import { LearnFlow } from "@/views/Learn";
-import { Placeholder } from "@/views/Placeholder";
+import { PracticeView } from "@/views/Practice";
+import { TestView } from "@/views/Test";
+import { ProgressView } from "@/views/Progress";
+import { CoachView } from "@/views/Coach";
+import { GuideView } from "@/views/Guide";
 import { useRoute } from "@/lib/route";
 import { installEngine } from "@/ui/engine";
 
-const PH: Record<string, [string, string]> = {
-  practice: ["Practice", "Adaptive practice, real text, code and your own texts arrive in the next phase."],
-  test: ["Test", "The timed typing test arrives in the next phase."],
-  progress: ["Progress", "Charts, the calendar, the key heat map and achievements arrive in the next phase."],
-  coach: ["Coach", "Lessons from Claude arrive in the next phase."],
-  guide: ["Guide", "The guide arrives in the next phase."],
-};
+const VIEWS: Record<string, () => React.JSX.Element> = { practice: PracticeView, test: TestView, progress: ProgressView, coach: CoachView, guide: GuideView };
 
 export function App() {
   const { tab, nonce } = useRoute();
@@ -31,7 +29,7 @@ export function App() {
       <div className="col">
         {touch ? <div className="note" id="touch-note"><span>Touch typing needs a physical keyboard. Connect one to practise here.</span><Button variant="outline" size="sm" onClick={() => setTouch(false)}>Dismiss</Button></div> : null}
         <main id="view" tabIndex={-1}>
-          {tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : <Placeholder key={tab + nonce} title={PH[tab][0]} text={PH[tab][1]} />}
+          {tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : (() => { const V = VIEWS[tab]; return <V key={tab + nonce} />; })()}
         </main>
       </div>
       <textarea id="sink" ref={sink} aria-label="Typing input" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} tabIndex={-1} />
