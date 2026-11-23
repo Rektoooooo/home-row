@@ -2,6 +2,7 @@
 /* ---- Learn tab: Coach panel and From Claude ---- */
 const fmtDay=ts=>{const d=new Date(ts);return d.getDate()+" "+MON[d.getMonth()]};
 function coachPanelHTML(){
+  if(!window.claude)return pastePanelHTML();
   if(!SAMPLE||!ACCT||coachOff||!LESSONS.some(l=>lessonDone(l.n)))return "";
   const body=ASK.ok?'<p class="small muted">New lesson added below.</p>':ASK.err?'<p class="small coach-err" role="alert">'+esc(ASK.err)+'</p>':"";
   const foot=ASK.running?'<span class="grow muted thinking" role="status">Thinking<i>.</i><i>.</i><i>.</i></span>'+btn("Stop",{act:"c-stop",cls:"quiet"}):btn("Ask Claude for a lesson",{act:"c-ask",cls:"ghost"});
@@ -23,6 +24,75 @@ function fromClaudeHTML(){
   if(COACH.lessons.length)h+='<div class="cgrid">'+COACH.lessons.map(lessonCardHTML).join("")+'</div>';
   if(COACH.dropped)h+='<p class="small muted" style="margin-top:12px">'+COACH.dropped+(COACH.dropped===1?" lesson from Claude couldn't":" lessons from Claude couldn't")+' be used on this keyboard.</p>';
   return h+'</section>';
+}
+
+/* ---- website: paste Claude's reply to add lessons ---- */
+let PASTE={open:false,text:"",msg:"",err:false};
+const keepScroll=fn=>{const y=scrollY;fn();scrollTo(0,y)};
+function pastePanelHTML(){
+  if(!LESSONS.some(l=>lessonDone(l.n)))return "";
+  const msg='<p class="small '+(PASTE.err?"coach-err":"muted")+'" id="paste-msg" role="'+(PASTE.err?"alert":"status")+'">'+esc(PASTE.msg)+'</p>';
+  const body=PASTE.open?'<label class="vh" for="paste-in">Claude\'s reply</label><textarea id="paste-in" class="mtarea" rows="6" maxlength="40000" spellcheck="false" placeholder="Paste Claude\'s whole reply here">'+esc(PASTE.text)+'</textarea>'+msg:
+    '<ol class="psteps"><li><b>Copy your progress.</b> It tells Claude your weakest keys and how to write the lessons.</li><li><b>Paste it into a chat with Claude</b> on claude.ai or in the Claude app.</li><li><b>Paste Claude\'s reply here.</b> Its lessons appear below, under From Claude.</li></ol>'+msg;
+  const foot=PASTE.open?btn("Cancel",{act:"p-cancel",cls:"quiet"})+btn("Add lessons",{act:"p-add"}):btn("Copy my progress",{act:"p-copy",cls:"ghost"})+btn("Paste Claude's reply",{act:"p-open"});
+  return '<section class="section-s">'+panel({flat:1,tag:"h2",eyebrow:"Coach",title:"Lessons written for you",
+    msg:"Claude can read your progress and write short lessons for the keys you miss most.",body,foot})+'</section>';
+}
+function pasteMsg(text,err){PASTE.msg=text;PASTE.err=!!err;const m=$("paste-msg");if(m){m.textContent=text;m.className="small "+(err?"coach-err":"muted");m.setAttribute("role",err?"alert":"status")}}
+function pasteCopy(b){
+  const text=progressExport(),label=b.textContent;
+  const ok=()=>{b.textContent="Copied";pasteMsg("Copied. Paste it into a chat with Claude.");setTimeout(()=>{b.textContent=label},1600)};
+  const fail=()=>{PASTE={open:false,text:"",msg:"",err:false};pasteMsg("Your browser blocked copying. Select the text below and copy it.");
+    const m=$("paste-msg");if(m&&!$("paste-copy")){m.insertAdjacentHTML("afterend",'<textarea id="paste-copy" class="mtarea" rows="5" readonly aria-label="Your progress, ready to copy"></textarea>');const t=$("paste-copy");t.value=text;t.focus();t.select()}};
+  try{navigator.clipboard.writeText(text).then(ok,fail)}catch(e){fail()}
+}
+/* the end of the JSON object that starts at st, or -1 (skips braces inside strings) */
+function braceEnd(t,st){
+  let d=0,inS=false,bs=false;
+  for(let k=st;k<t.length;k++){
+    const c=t[k];
+    if(inS){if(bs)bs=false;else if(c==="\\")bs=true;else if(c==='"')inS=false;continue}
+    if(c==='"')inS=true;else if(c==="{")d++;else if(c==="}"&&--d===0)return k;
+  }
+  return -1;
+}
+/* finds {"homerow":1,...} (or any object with "lessons") in a pasted chat reply */
+function findLessonJSON(t){
+  for(const mark of ['"homerow"','"lessons"']){
+    for(let i=t.indexOf(mark);i>=0;i=t.indexOf(mark,i+1)){
+      const st=t.lastIndexOf("{",i);if(st<0)continue;
+      const end=braceEnd(t,st);if(end<0)continue;
+      try{const o=JSON.parse(t.slice(st,end+1));if(isObj(o)&&Array.isArray(o.lessons))return o}catch(e){}
+    }
+  }
+  return null;
+}
+function hash36(s){let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)}
+/* checks every lesson like a chat-made one; the same lesson pasted twice keeps one copy */
+function importLessons(text){
+  const o=findLessonJSON(String(text||""));
+  if(!o)return null;
+  const now=Date.now(),added=[];let bad=0;
+  o.lessons.slice(0,6).forEach((l,i)=>{
+    if(!isObj(l)){bad++;return}
+    const steps=Array.isArray(l.steps)?l.steps:[];
+    const c=cleanLesson({id:"chat-"+hash36(JSON.stringify([l.title,steps.map(s=>isObj(s)?s.text:"")])),title:l.title,why:l.why,by:"chat",created:now-i,steps});
+    if(c&&!added.some(a=>a.id===c.id))added.push(c);else if(!c)bad++;
+  });
+  const note=typeof o.note==="string"&&o.note.trim()?{text:o.note.trim().slice(0,600),at:now}:null;
+  return {added,bad,note};
+}
+function pasteAdd(){
+  const t=$("paste-in"),r=importLessons(t?t.value:"");
+  if(!r)return pasteMsg("No lessons found. Paste Claude's whole reply, including the block that starts with {\"homerow\".",true);
+  if(!r.added.length)return pasteMsg(r.bad===1?"That lesson can't be used: it has characters this keyboard can't type, or a step is too short or too long. Ask Claude to fix it.":"These lessons can't be used: they have characters this keyboard can't type, or steps that are too short or too long. Ask Claude to fix them.",true);
+  const ids=new Set(r.added.map(l=>l.id)),n=r.added.length;
+  PASTE={open:false,text:"",err:false,msg:"Added "+n+(n===1?" lesson":" lessons")+" below."+(r.bad?" "+r.bad+(r.bad===1?" lesson":" lessons")+" couldn't be used.":"")};
+  const y=scrollY;
+  coachMutate(raw=>{
+    const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter(x=>!(isObj(x)&&ids.has(x.id)));
+    raw.lessons=r.added.concat(ls).slice(0,20);if(r.note)raw.note=r.note;return raw;
+  }).then(()=>{if(UI.kind==="learn")scrollTo(0,y)});
 }
 
 /* ---- running a custom lesson (reuses the lesson flow) ---- */
@@ -60,12 +130,24 @@ function customResults(){
 
 /* ---- Progress tab: Share with Claude ---- */
 /* without an account Claude can't read the progress, so the card copies the whole progress instead of a prompt */
-const shareLocal=()=>saveStatus==="local"||saveStatus==="offline"||saveStatus==="failed";
+const shareLocal=()=>!window.claude||saveStatus==="local"||saveStatus==="offline"||saveStatus==="failed";
 /* inside claude.ai the copy can be moved into the owner's account; on the website it only asks for advice and lessons */
-const progressExport=()=>(window.claude?"Here is my Home Row typing progress. It is saved in this browser only. Check it, move it to my account and make me custom lessons: "+ARTIFACT_URL:"Here is my Home Row typing progress. Check it, tell me what to work on, and write me 2 short practice lessons for my weakest keys, using only keys I have learned.")+"\n\n"+JSON.stringify(S);
+const progressExport=()=>window.claude?"Here is my Home Row typing progress. It is saved in this browser only. Check it, move it to my account and make me custom lessons: "+ARTIFACT_URL+"\n\n"+JSON.stringify(S):coachAsk();
+/* website: Claude can't reach the app, so the copied text asks for the lessons as one JSON block the learner pastes back */
+function coachAsk(){
+  let allowed=[...allowedChars()];if(!allowed.length)allowed=[...LESSONS[0].keys];
+  return "I'm learning to touch type with Home Row. Here is my progress. Tell me in 2 or 3 sentences what to work on, then write me 2 short practice lessons for my weakest keys and letter pairs.\n\n"+
+  "My progress (JSON):\n"+JSON.stringify(buildSummary())+"\n\nRules for the lessons:\n"+
+  "- Use only these characters: "+allowed.join("")+" and the space bar.\n"+
+  "- 3 steps per lesson. Step 1, 40-80 characters: a drill on my weakest keys and pairs. Steps 2 and 3, 80-200 characters each: real, common English words and short phrases full of those keys. No names.\n"+
+  "- Single spaces, no line breaks. Never put ' \" ` ~ or ^ directly before a vowel, c, n or y.\n"+
+  "- title: up to 40 characters. why: one sentence to me, up to 140 characters. note: your advice, up to 300 characters.\n\n"+
+  "End your reply with one code block that holds only this JSON, so I can paste it into the app:\n"+
+  '{"homerow":1,"note":"...","lessons":[{"title":"...","why":"...","steps":[{"name":"...","text":"..."},{"name":"...","text":"..."},{"name":"...","text":"..."}]}]}';
+}
 function shareCardHTML(){
   if(shareLocal())return '<section class="sect-gap">'+panel({flat:1,tag:"h2",eyebrow:"Share with Claude",title:"Send your progress to Claude",
-    msg:window.claude?"This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons.":"Your progress is saved in this browser. Copy it and paste it into a Claude chat. Claude can check it and write lessons for your weakest keys.",
+    msg:window.claude?"This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons.":"Copy your progress and paste it into a chat with Claude. Claude tells you what to work on and writes lessons for your weakest keys. Paste its reply in Learn, under Coach, and the lessons appear there.",
     body:'<textarea class="promptbox exportbox" id="share-box" readonly rows="4" hidden aria-label="Your progress, ready to copy"></textarea><p class="small muted" id="share-msg" role="status"></p>',
     foot:'<button type="button" class="btn ghost" id="share-copy" data-act="c-copy">Copy my progress</button>'})+'</section>';
   return '<section class="sect-gap">'+panel({flat:1,tag:"h2",eyebrow:"Share with Claude",title:"Let Claude see your progress",
@@ -95,8 +177,13 @@ view.addEventListener("click",e=>{
     case "c-rm-no":{const y=scrollY;RM_ID="";renderLearn();scrollTo(0,y);break}
     case "c-rm-yes":RM_ID="";{const y=scrollY;coachRemove(id).then(()=>{if(UI.kind==="learn"){renderLearn();scrollTo(0,y)}});break}
     case "c-copy":copyShare(b);break;
+    case "p-copy":pasteCopy(b);break;
+    case "p-open":PASTE={open:true,text:"",msg:"",err:false};keepScroll(renderLearn);{const t=$("paste-in");if(t)t.focus({preventScroll:true})}break;
+    case "p-cancel":PASTE={open:false,text:"",msg:"",err:false};keepScroll(renderLearn);break;
+    case "p-add":pasteAdd();break;
   }
 });
+view.addEventListener("input",e=>{if(e.target.id==="paste-in")PASTE.text=e.target.value});
 
 /* ============================ WEEKLY COACH (phase D) ============================ */
 const WK={running:false,fired:false,msg:""},WK_TRY="homerow.weeklyTry";
