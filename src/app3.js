@@ -86,6 +86,10 @@ function createExercise(o){
   const E={o,text,pos:0,auto:0,presses:0,correct:0,ok:0,started:false,paused:false,done:false,seg:0,act:0,last:0,missBy:{},ev:[],reveal:false,lastCode:"",lastCodeT:0};
   const txt=$("txt"),vp=$("vp"),pauseEl=$("pause"),hintEl=$("hint");
   const kb=makeKeyboard($("kb"),"stage"),hands=makeHands($("hands"));
+  /* only the keys this text uses stay bright on the keyboard */
+  const used=new Set();
+  const focusKeys=s=>{[...s].forEach(ch=>{if(ch!=="\n")used.add(ch)});const ids=idsFor([...used]);if(/\n/.test(s)||o.code)ids.push("Enter");kb.set({learned:[...new Set(kb.st.learned.concat(ids))]});kb.svg.classList.add("focus")};
+  focusKeys(text);
   /* render text */
   let html="";
   /* o.code: one block per line; a newline is its own .c.nl cell, leading spaces are .c.ind. xc keeps those extra classes through paint() */
@@ -131,6 +135,7 @@ function createExercise(o){
     cs.length=0;cs.push(...txt.querySelectorAll(".c"));
     for(let i=0;i<add.length;i++){marks.push(0);missed.push(0);firstDone.push(0);firstMiss.push(0)}
     text+=add;N=text.length;E.text=text;
+    focusKeys(add);
   }
   function placeCaret(){
     const el=cs[Math.min(E.pos,N-1)];if(!el)return;

@@ -7,7 +7,7 @@
    a white "sheet" above an SVG keycap keyboard and a two-hand finger diagram. */
 :root{
   --bg:#E6E9EE; --surface:#FCFCFD; --surface-2:#F1F3F6; --sunken:#D9DEE5; --line:#D2D7DF; --cap-edge:#BFC6D0;
-  --deck-a:#D3D9E2; --deck-b:#BEC6D1; --deck-hi:rgba(255,255,255,.75); --shine:1;
+  --deck-a:#DCE1E8; --deck-b:#D3D9E1; --deck-hi:rgba(255,255,255,.7); --shine:.5; --dim:.42;
   --fg:#15181D; --fg-2:#3A404B; --muted:#677080;
   --btn:#1C2027; --btn-edge:#000000; --btn-fg:#F4F5F7;
   --f-pinky:#7C4DDB; --f-ring:#2F6FE0; --f-middle:#0D8F84; --f-index:#C98204; --f-thumb:#6B7686;
@@ -19,7 +19,7 @@
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#262A33; --deck-b:#16191E; --deck-hi:rgba(255,255,255,.07); --shine:.16;
+    --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#1D2026; --deck-b:#181B20; --deck-hi:rgba(255,255,255,.05); --shine:.08; --dim:.3;
     --fg:#ECEEF2; --fg-2:#C3C8D1; --muted:#8E96A4;
     --btn:#ECEEF2; --btn-edge:#9AA2AE; --btn-fg:#15181D;
     --f-pinky:#A585F5; --f-ring:#6B9CF5; --f-middle:#3CC7B8; --f-index:#F0B43A; --f-thumb:#97A1B0;
@@ -28,7 +28,7 @@
   }
 }
 :root[data-theme="dark"]{
-  --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#262A33; --deck-b:#16191E; --deck-hi:rgba(255,255,255,.07); --shine:.16;
+  --bg:#111317; --surface:#1A1D23; --surface-2:#21252C; --sunken:#0D0F12; --line:#2C313A; --cap-edge:#06070A; --deck-a:#1D2026; --deck-b:#181B20; --deck-hi:rgba(255,255,255,.05); --shine:.08; --dim:.3;
   --fg:#ECEEF2; --fg-2:#C3C8D1; --muted:#8E96A4;
   --btn:#ECEEF2; --btn-edge:#9AA2AE; --btn-fg:#15181D;
   --f-pinky:#A585F5; --f-ring:#6B9CF5; --f-middle:#3CC7B8; --f-index:#F0B43A; --f-thumb:#97A1B0;
@@ -157,7 +157,7 @@ kbd{font:500 12px var(--font-mono);padding:1px 6px;border-radius:5px;background:
 .hint b{color:var(--fg)}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--fc);margin-right:8px;vertical-align:baseline}
 .kbwrap{display:grid;gap:0;max-width:max(560px,min(1060px,calc((100dvh - 440px) * 1.95)));margin-inline:auto}
-.kbwrap svg.kb{box-sizing:border-box;padding:1.8% 1.8% 1.4%;border-radius:clamp(14px,2.4vw,26px);background:linear-gradient(180deg,var(--deck-a),var(--deck-b));box-shadow:inset 0 1px 0 var(--deck-hi),inset 0 -3px 0 rgba(0,0,0,.12),0 2px 0 var(--cap-edge),0 26px 44px -26px rgba(20,28,60,.5)}
+.kbwrap svg.kb{box-sizing:border-box;padding:1.8% 1.8% 1.4%;border-radius:clamp(14px,2.4vw,26px);background:linear-gradient(180deg,var(--deck-a),var(--deck-b));box-shadow:inset 0 1px 0 var(--deck-hi),0 0 0 1px var(--line),0 14px 28px -22px rgba(20,28,60,.35)}
 .kbwrap svg.hands{width:80%;margin:8px auto 0}
 dialog.movedlg{border:0;padding:0;border-radius:18px;background:var(--surface);color:var(--fg);width:min(520px,calc(100vw - 24px));box-shadow:0 0 0 1px var(--line),0 24px 60px -20px color-mix(in oklab,var(--fg) 45%,transparent);overflow:hidden}
 dialog.movedlg::backdrop{background:color-mix(in oklab,var(--bg) 70%,transparent);backdrop-filter:blur(2px)}
@@ -167,14 +167,13 @@ svg.kb,svg.hands{display:block;width:100%;height:auto;user-select:none;-webkit-u
 svg.hands{margin-top:-4px}
 
 /* keyboard svg */
-.kb .edge{fill:color-mix(in oklab,var(--fc,var(--f-thumb)) 24%,var(--cap-edge))}
-.kb .mod .edge{fill:var(--cap-edge)}
+.kb .edge{fill:var(--cap-edge)}
 .kb .shine{pointer-events:none;opacity:var(--shine)}
 .kb .cap{fill:color-mix(in oklab,var(--fc,var(--f-thumb)) 16%,var(--surface))}
 .kb .mod .cap{fill:var(--surface-2)}
 .kb text{font-family:var(--font-display);font-weight:600;fill:var(--fg-2);pointer-events:none}
 .kb .lg{font-size:25px}
-.kb .sl{font-size:15px;fill:var(--muted)}
+.kb .sl{font-size:14px;fill:var(--muted);opacity:.8}
 .kb .bl{font-size:20px}
 .kb .ml{font-size:12px;font-weight:500;fill:var(--muted)}
 .kb .bump{fill:var(--fg-2);opacity:.55}
@@ -183,9 +182,12 @@ svg.hands{margin-top:-4px}
 .kb .key.next .cap{fill:var(--fc)}
 .kb .key.next text{fill:var(--surface)}
 .kb .key.next .bump{fill:var(--surface);opacity:.8}
-.kb .key.next .top{transform:translateY(-2px);filter:drop-shadow(0 0 7px color-mix(in oklab,var(--fc) 65%,transparent))}
+.kb .key.next .top{transform:translateY(-2px)}
 .kb .key.next .edge{fill:color-mix(in oklab,var(--fc) 62%,var(--shade))}
-.kb .key.down .top{transform:translateY(3px);filter:none}
+.kb .key.down .top{transform:translateY(2px)}
+/* lessons and practice: keys the text does not use step back, so the ones that matter are easy to find */
+.kb[data-mode="stage"].focus .key:not(.learned):not(.next):not(.err){opacity:var(--dim)}
+.kb .key{transition:opacity .2s}
 .kb .key.err .cap{fill:var(--error)}
 .kb .key.err text{fill:var(--surface)}
 .kb[data-mode="map"] .cap{fill:var(--surface-2)}

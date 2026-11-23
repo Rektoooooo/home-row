@@ -177,11 +177,11 @@ function keySVG(k){
   if(k.L){
     const x0=x+G,x1=x+w-G,xm=x+G+.25*U,yt=y+G,yn=y+U-G,yb=y+2*U-G,r=8;
     const d="M"+(x0+r)+","+yt+" H"+(x1-r)+" Q"+x1+","+yt+" "+x1+","+(yt+r)+" V"+(yb-r)+" Q"+x1+","+yb+" "+(x1-r)+","+yb+" H"+(xm+r)+" Q"+xm+","+yb+" "+xm+","+(yb-r)+" V"+(yn+r)+" Q"+xm+","+yn+" "+(xm-r)+","+yn+" H"+(x0+r)+" Q"+x0+","+yn+" "+x0+","+(yn-r)+" V"+(yt+r)+" Q"+x0+","+yt+" "+(x0+r)+","+yt+" Z";
-    shape='<path class="cap" d="'+d+'"/><path class="shine" d="'+d+'" fill="url(#'+KSID+')"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,4)"/>';
+    shape='<path class="cap" d="'+d+'"/><path class="shine" d="'+d+'" fill="url(#'+KSID+')"/>';edge='<path class="edge" d="'+d+'" transform="translate(0,3)"/>';
     txt='<text class="ml" x="'+(x+w-G-9)+'" y="'+(y+2*U-G-9)+'" text-anchor="end">return</text>';
   }else{
     shape='<rect class="cap" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/><rect class="shine" x="'+(x+G)+'" y="'+(y+G)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9" fill="url(#'+KSID+')"/>';
-    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+4)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/>';
+    edge='<rect class="edge" x="'+(x+G)+'" y="'+(y+G+3)+'" width="'+(w-2*G)+'" height="'+h+'" rx="9"/>';
     if(k.mod){const a=k.a==="e"?"end":k.a==="c"?"middle":"start",tx=k.a==="e"?x+w-G-9:k.a==="c"?x+w/2:x+G+9;
       txt='<text class="ml" x="'+tx+'" y="'+(y+G+h-8)+'" text-anchor="'+a+'">'+esc(k.mod)+'</text>'}
     else if(k.sh&&typeof k.sh==="string"&&!/^[A-Z]$/.test(k.sh)){
