@@ -750,18 +750,40 @@ dialog#share .dlg-body{gap:14px;padding:18px 24px 24px}
 .mrow .ma{display:flex;gap:6px;align-items:center}
 .rstrip .rbtns{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}
 @media (max-width:560px){.rstrip .rbtns{width:100%;margin-left:0}.rstrip .rbtns .btn{flex:1 1 auto}}
+
+/* nav, in the shadcn/ui style: a frosted bar, a muted tab list with a raised active tab, outline pills, a ghost icon button */
+header.top{background:color-mix(in oklab,var(--bg) 80%,transparent);-webkit-backdrop-filter:saturate(1.5) blur(14px);backdrop-filter:saturate(1.5) blur(14px);padding-block:0;border-bottom:1px solid var(--line)}
+header.top .top-in{min-height:62px;gap:8px 16px;flex-wrap:wrap}
+header.top .brand{padding-bottom:0;font-size:18px;gap:9px;letter-spacing:-.01em}
+header.top .tabs{flex:0 1 auto;margin-inline:auto;gap:2px;padding:4px;border-radius:12px;background:color-mix(in oklab,var(--fg) 6%,var(--bg));box-shadow:inset 0 0 0 1px color-mix(in oklab,var(--fg) 4%,transparent)}
+header.top .tab{display:inline-flex;align-items:center;justify-content:center;gap:7px;height:34px;padding:0 12px;border-radius:8px;font:500 14.5px/1 var(--font-display);color:var(--muted);box-shadow:none;transition:color .15s,background-color .15s,box-shadow .15s}
+header.top .tab svg{width:16px;height:16px;flex:none}
+header.top .tab:hover{color:var(--fg)}
+header.top .tab[aria-current="page"]{color:var(--fg);background:var(--surface);box-shadow:0 0 0 1px var(--line),0 1px 3px color-mix(in oklab,var(--shade) 12%,transparent)}
+header.top .tab:focus-visible{outline:2px solid var(--fg);outline-offset:1px}
+header.top .top-r{gap:8px;padding-bottom:0;margin-left:0}
+header.top .flame{height:32px;margin:0;padding:0 11px 0 9px;background:var(--surface);box-shadow:0 0 0 1px var(--line)}
+header.top .flame.lit{background:color-mix(in oklab,#FF8A3D 12%,var(--surface));box-shadow:0 0 0 1px color-mix(in oklab,#FF8A3D 35%,var(--line))}
+header.top .ring-w{height:32px;gap:7px;padding:0 12px 0 7px;border-radius:999px;background:var(--surface);box-shadow:0 0 0 1px var(--line);font:500 13.5px var(--font-display);color:var(--fg-2)}
+header.top .ring-w svg{width:20px;height:20px}
+header.top .icon-btn{width:34px;height:34px;border-radius:8px}
+header.top .icon-btn svg{width:19px;height:19px}
+@media (max-width:1100px){header.top .tab svg{display:none}header.top .tab{padding:0 11px}}
+@media (max-width:900px){header.top .top-in{min-height:0;padding-block:10px}header.top .tabs{order:4;flex-basis:100%;margin:0}header.top .tab{flex:1 1 0;min-width:0}header.top .top-r{margin-left:auto}}
+@media (min-width:600px) and (max-width:900px){header.top .tab svg{display:block}}
+@media (max-width:480px){header.top .brand-name{display:none}header.top .tab{padding:0 4px;font-size:13.5px}header.top .ring-w{padding:0 10px 0 6px}}
 </style>
 
 <div class="hr-shell" id="app">
   <header class="top"><div class="top-in">
     <a class="brand" href="#learn" style="color:inherit;text-decoration:none" aria-label="Home Row, go to Learn"><span class="brand-mark" id="brand-mark" aria-hidden="true"></span><span class="brand-name">Home Row</span></a>
     <nav class="tabs" id="tabs" aria-label="Sections">
-      <button class="tab" data-tab="learn" type="button">Learn</button>
-      <button class="tab" data-tab="practice" type="button">Practice</button>
-      <button class="tab" data-tab="test" type="button">Test</button>
-      <button class="tab" data-tab="progress" type="button">Progress</button>
-      <button class="tab" data-tab="coach" type="button">Coach</button>
-      <button class="tab" data-tab="guide" type="button">Guide</button>
+      <button class="tab" data-tab="learn" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg><span>Learn</span></button>
+      <button class="tab" data-tab="practice" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg><span>Practice</span></button>
+      <button class="tab" data-tab="test" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="10" x2="14" y1="2" y2="2"/><line x1="12" x2="15" y1="14" y2="11"/><circle cx="12" cy="14" r="8"/></svg><span>Test</span></button>
+      <button class="tab" data-tab="progress" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="m19 9-5 5-4-4-3 3"/></svg><span>Progress</span></button>
+      <button class="tab" data-tab="coach" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"/><path d="M20 3v4"/><path d="M22 5h-4"/></svg><span>Coach</span></button>
+      <button class="tab" data-tab="guide" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m16.24 7.76-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"/></svg><span>Guide</span></button>
     </nav>
     <div class="top-r">
       <span class="flame" id="flame" hidden></span>
