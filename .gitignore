@@ -7,3 +7,7 @@ tasks/
 .claude/
 .playwright-mcp/
 .vercel/
+node_modules/
+dist/
+dist-artifact/
+*.tsbuildinfo
