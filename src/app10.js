@@ -62,9 +62,9 @@ const ACH=[
   {id:"wpm-30",title:"30 WPM",desc:"A test at 30 WPM or more, with 90% accuracy or better",cat:"speed",icon:"bolt",test:()=>testOk(30)},
   {id:"wpm-40",title:"40 WPM",desc:"A test at 40 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(40)},
   {id:"wpm-60",title:"60 WPM",desc:"A test at 60 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(60)},
-  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&pctOf(t.acc)>=98)},
+  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&t.acc>=.98)},
   {id:"home-strong",title:"Home row mastered",desc:"Make every home row key strong",cat:"accuracy",icon:"shield",test:()=>[..."asdfjkl;"].every(k=>{const v=strengthOf(S.keys[k]);return v!=null&&v>=1})},
-  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>Math.round(t.wpm)>Math.round(S.baseline.wpm)&&pctOf(t.acc)>=95)},
+  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>t.wpm>S.baseline.wpm&&t.acc>=.95)},
   {id:"goal-5",title:"Five good days",desc:"Reach your daily goal on 5 days",cat:"streak",icon:"calendar",test:()=>Object.values(S.days).filter(d=>d.ms>=S.settings.goal*60000).length>=5},
   {id:"level-5",title:"Level 5",desc:"Reach level 5",cat:"special",icon:"chevron",test:()=>levelInfo().level>=5},
   {id:"level-10",title:"Level 10",desc:"Reach level 10",cat:"special",icon:"chevron",test:()=>levelInfo().level>=10},
@@ -163,7 +163,7 @@ function countUp(){
   const t0=performance.now(),D=500;
   const step=t=>{
     const p=Math.min(1,(t-t0)/D),k=1-Math.pow(1-p,3);
-    items.forEach(it=>{if(it.e.isConnected)it.e.textContent=p>=1?it.f:it.f.replace(/\d+/g,n=>String(Math.round(+n*k)))});
+    items.forEach(it=>{if(it.e.isConnected)it.e.textContent=p>=1?it.f:it.f.replace(/\d+(?:\.\d+)?/g,n=>n.includes(".")?(+n*k).toFixed(1):String(Math.round(+n*k)))});
     if(p<1)requestAnimationFrame(step);
   };
   step(t0);requestAnimationFrame(step);

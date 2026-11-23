@@ -135,7 +135,7 @@ function stepDone(res){
   if(RUN.step<RUN.texts.length){
     const n=RUN.n,s=RUN.step,N=RUN.texts.length;
     setView('<div class="result">'+panel({eyebrow:(RUN.custom?'From Claude':'Lesson '+n)+' · step '+s+' of '+N,title:esc(RUN.names[s-1])+' done',
-      stats:pstat(Math.round(res.wpm),"WPM")+pstat(Math.round(res.acc*100)+"%","Accuracy"),statsCls:"c2",
+      stats:pstat(Math.round(res.wpm),"WPM")+pstat(pctTxt(res.acc),"Accuracy"),statsCls:"c2",
       body:'<div class="upnext"><span class="label">Up next</span><span class="txt2">Step '+(s+1)+' · '+esc(RUN.names[s])+'</span></div>',
       foot:btn("Back to lessons",{act:"to-learn",cls:"quiet",icon:"back"})+btn("Next step",{act:"next-step",primary:1,hint:ENTER})})+'</div>',"summary");
     UI.escape=()=>renderLearn();
@@ -146,8 +146,8 @@ function stepDone(res){
 function showResults(){
   if(RUN.custom)return customResults();
   const n=RUN.n,L=LESSONS[n-1],a=RUN.agg;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
-  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=L.wpm+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(acc>=.98&&Math.round(wpm)>=L.wpm+5)stars=3}
   const r=S.lessons[n]||(S.lessons[n]={done:false,stars:0,wpm:0,acc:0,attempts:0,last:0});
   const wasDone=r.done,prevStars=r.stars;
   r.attempts++;r.last=Date.now();if(passed)r.done=true;r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);
@@ -155,7 +155,7 @@ function showResults(){
   const pk=Object.entries(a.missBy).sort((x,y)=>y[1]-x[1]).slice(0,3);
   const sec=Math.round(a.ms/1000),time=Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
   const last=n===LESSONS.length;
-  const msg=passed?(last?"You finished the course.":"Lesson "+(n+1)+" is unlocked."):"Accuracy "+Math.round(acc*100)+"%. You need 95% to pass. Slow down a little and keep your eyes on the screen.";
+  const msg=passed?(last?"You finished the course.":"Lesson "+(n+1)+" is unlocked."):"Accuracy "+pctTxt(acc)+". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
   const inS=!!(SESSION&&SESSION.steps[SESSION.i]&&SESSION.steps[SESSION.i].id==="lesson");
   if(inS)SESSION.rs=[{ms:a.ms,chars:a.chars,presses:a.presses,correct:a.correct}];
   const again=btn("Try again",{act:"start",n,cls:"ghost"});
@@ -164,7 +164,7 @@ function showResults(){
     btn("Back to lessons",{act:"to-learn",cls:"ghost"})+btn("Try again",{act:"start",n,primary:1,hint:ENTER});
   const keys=pk.length?'<div><span class="label">Keys to watch</span><div class="pkrow" style="margin-top:10px">'+pk.map(([k,c])=>{const i=charInfo(k)||charInfo(k.toUpperCase());return '<span class="pk"><span class="bigcap sm" style="--fc:'+fcol(i?i.key.f:"TH")+'">'+(k===" "?"space":esc(k.toUpperCase()))+'</span>'+c+(c===1?" miss":" misses")+'</span>'}).join("")+'</div></div>':"";
   setView('<div class="result">'+panel({eyebrow:'Lesson '+n+' · '+esc(L.stage),title:esc(L.title),status:statusChip(passed),
-    msg:esc(msg),stats:pstat(Math.round(wpm),"WPM","target "+L.wpm)+pstat(Math.round(acc*100)+"%","Accuracy","needs 95%")+pstat(time,"Time"),
+    msg:esc(msg),stats:pstat(Math.round(wpm),"WPM","target "+L.wpm)+pstat(pctTxt(acc),"Accuracy","needs 95%")+pstat(time,"Time"),
     body:(passed?'<div class="stars-lg">'+starsSVG(stars,36,true)+'</div>':"")+keys,foot})+'</div>',"results");
   UI.escape=()=>renderLearn();
 }

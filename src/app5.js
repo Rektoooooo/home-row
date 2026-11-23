@@ -233,7 +233,7 @@ function testDone(res){
   const eyebrow='Test · '+dur+' s · '+POOL_NAME[o.pool]+(opts.length?" · "+opts.join(", "):"");
   const legend='<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:middle;margin-right:6px"><path d="M3 3l8 8m0-8l-8 8" stroke="var(--error)" stroke-width="2" stroke-linecap="round"/></svg>mistake</span>';
   setView('<div class="result">'+panel({wide:1,eyebrow,title:"Test done",status:isBest?'<span class="status ok">'+ico("check",14)+'New best</span>':"",
-    stats:pstat(Math.round(res.wpm),"WPM",isBest?"your best at "+dur+" s":"",'lead')+pstat(Math.round(res.raw),"Raw WPM")+pstat(Math.round(res.acc*100)+"%","Accuracy")+pstat(res.correct+' · '+res.mistakes,"Correct · mistakes"),statsCls:"c4",
+    stats:pstat(Math.round(res.wpm),"WPM",isBest?"your best at "+dur+" s":"",'lead')+pstat(Math.round(res.raw),"Raw WPM")+pstat(pctTxt(res.acc),"Accuracy")+pstat(res.correct+' · '+res.mistakes,"Correct · mistakes"),statsCls:"c4",
     body:'<div><h3>Speed during the test</h3><div class="legrow">'+legend+'</div><div class="chart-wrap">'+svg+'</div></div>',
     foot:btn("Change settings",{act:"t-settings",cls:"ghost"})+btn("Share",{act:"sh-test",cls:"ghost"})+btn("Try again",{act:"t-start",primary:1,hint:ENTER})})+'</div>',"results");
   UI.escape=()=>renderTest();

@@ -58,7 +58,7 @@ function stepFinished(){
   const nx=SESSION.steps[SESSION.i];
   if(!nx)return sessionDone();
   setView('<div class="result">'+panel({eyebrow:'Step '+SESSION.i+' of '+SESSION.steps.length,title:esc(st.label)+' done',
-    stats:pstat(Math.round(r.wpm),"WPM")+pstat(Math.round(r.acc*100)+"%","Accuracy"),statsCls:"c2",body:upNextHTML(nx),
+    stats:pstat(Math.round(r.wpm),"WPM")+pstat(pctTxt(r.acc),"Accuracy"),statsCls:"c2",body:upNextHTML(nx),
     foot:btn("End session",{act:"s-end",cls:"quiet",icon:"x"})+btn("Continue",{act:"s-continue",primary:1,hint:ENTER})})+'</div>',"session");
 }
 function sessionDone(){

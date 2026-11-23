@@ -118,18 +118,18 @@ function startCustom(id){
 }
 function customResults(){
   const a=RUN.agg,id=RUN.custom,title=RUN.title,target=S.settings.target;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
-  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=target+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(acc>=.98&&Math.round(wpm)>=target+5)stars=3}
   const r=S.custom[id]||(S.custom[id]={wpm:0,acc:0,stars:0,attempts:0,last:0});
   const prevStars=r.stars;
   r.attempts++;r.last=Date.now();r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);rewardsLesson(passed&&stars>prevStars);
   const ids=Object.keys(S.custom);if(ids.length>100)ids.sort((x,y)=>S.custom[x].last-S.custom[y].last).slice(0,ids.length-100).forEach(k=>delete S.custom[k]);
   const pk=Object.entries(a.missBy).sort((x,y)=>y[1]-x[1]).slice(0,3);
   const sec=Math.round(a.ms/1000),time=Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
-  const msg=passed?"":"Accuracy "+Math.round(acc*100)+"%. You need 95% to pass. Slow down a little and keep your eyes on the screen.";
+  const msg=passed?"":"Accuracy "+pctTxt(acc)+". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
   const keys=pk.length?'<div><span class="label">Keys to watch</span><div class="pkrow" style="margin-top:10px">'+pk.map(([k,c])=>{const i=charInfo(k)||charInfo(k.toUpperCase());return '<span class="pk"><span class="bigcap sm" style="--fc:'+fcol(i?i.key.f:"TH")+'">'+(k===" "?"space":esc(k.toUpperCase()))+'</span>'+c+(c===1?" miss":" misses")+'</span>'}).join("")+'</div></div>':"";
   setView('<div class="result">'+panel({eyebrow:"From Claude",title:esc(title),status:statusChip(passed),msg:msg?esc(msg):"",
-    stats:pstat(Math.round(wpm),"WPM","target "+target)+pstat(Math.round(acc*100)+"%","Accuracy","needs 95%")+pstat(time,"Time"),
+    stats:pstat(Math.round(wpm),"WPM","target "+target)+pstat(pctTxt(acc),"Accuracy","needs 95%")+pstat(time,"Time"),
     body:(passed?'<div class="stars-lg">'+starsSVG(stars,36,true)+'</div>':"")+keys,
     foot:'<button type="button" class="btn ghost" data-act="c-run" data-id="'+esc(id)+'">Try again</button>'+btn("Back to Coach",{act:"to-coach",primary:1,hint:ENTER})})+'</div>',"results");
   UI.escape=()=>renderCoach();

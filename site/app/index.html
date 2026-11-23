@@ -1217,8 +1217,8 @@ function genLesson(n){
   for(let a=0;a<12;a++){r=[1,2,3].map(s=>genStep(n,s).trim());if(r.every(t=>t&&!BADDEAD.test(t)&&!/ {2}/.test(t)))return r}
   return r;
 }
-/* pass, stars and badges compare the same whole percent the screen shows (94.6% shows as 95% and counts as 95%) */
-const pctOf=a=>Math.round(a*100);
+/* accuracy on result screens: one decimal, rounded down, so 94.96% reads 94.9% and never looks like a pass */
+const pctTxt=a=>{const v=Math.floor(a*1000+1e-6)/10;return (Number.isInteger(v)?v:v.toFixed(1))+"%"};
 function wpmCalc(chars,ms){return ms>0?(chars/5)/(ms/60000):0}
 
 /* ============================ STORAGE ============================ */
@@ -1883,7 +1883,7 @@ function stepDone(res){
   if(RUN.step<RUN.texts.length){
     const n=RUN.n,s=RUN.step,N=RUN.texts.length;
     setView('<div class="result">'+panel({eyebrow:(RUN.custom?'From Claude':'Lesson '+n)+' · step '+s+' of '+N,title:esc(RUN.names[s-1])+' done',
-      stats:pstat(Math.round(res.wpm),"WPM")+pstat(Math.round(res.acc*100)+"%","Accuracy"),statsCls:"c2",
+      stats:pstat(Math.round(res.wpm),"WPM")+pstat(pctTxt(res.acc),"Accuracy"),statsCls:"c2",
       body:'<div class="upnext"><span class="label">Up next</span><span class="txt2">Step '+(s+1)+' · '+esc(RUN.names[s])+'</span></div>',
       foot:btn("Back to lessons",{act:"to-learn",cls:"quiet",icon:"back"})+btn("Next step",{act:"next-step",primary:1,hint:ENTER})})+'</div>',"summary");
     UI.escape=()=>renderLearn();
@@ -1894,8 +1894,8 @@ function stepDone(res){
 function showResults(){
   if(RUN.custom)return customResults();
   const n=RUN.n,L=LESSONS[n-1],a=RUN.agg;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
-  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=L.wpm+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=L.wpm)stars=2;if(acc>=.98&&Math.round(wpm)>=L.wpm+5)stars=3}
   const r=S.lessons[n]||(S.lessons[n]={done:false,stars:0,wpm:0,acc:0,attempts:0,last:0});
   const wasDone=r.done,prevStars=r.stars;
   r.attempts++;r.last=Date.now();if(passed)r.done=true;r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);
@@ -1903,7 +1903,7 @@ function showResults(){
   const pk=Object.entries(a.missBy).sort((x,y)=>y[1]-x[1]).slice(0,3);
   const sec=Math.round(a.ms/1000),time=Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
   const last=n===LESSONS.length;
-  const msg=passed?(last?"You finished the course.":"Lesson "+(n+1)+" is unlocked."):"Accuracy "+Math.round(acc*100)+"%. You need 95% to pass. Slow down a little and keep your eyes on the screen.";
+  const msg=passed?(last?"You finished the course.":"Lesson "+(n+1)+" is unlocked."):"Accuracy "+pctTxt(acc)+". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
   const inS=!!(SESSION&&SESSION.steps[SESSION.i]&&SESSION.steps[SESSION.i].id==="lesson");
   if(inS)SESSION.rs=[{ms:a.ms,chars:a.chars,presses:a.presses,correct:a.correct}];
   const again=btn("Try again",{act:"start",n,cls:"ghost"});
@@ -1912,7 +1912,7 @@ function showResults(){
     btn("Back to lessons",{act:"to-learn",cls:"ghost"})+btn("Try again",{act:"start",n,primary:1,hint:ENTER});
   const keys=pk.length?'<div><span class="label">Keys to watch</span><div class="pkrow" style="margin-top:10px">'+pk.map(([k,c])=>{const i=charInfo(k)||charInfo(k.toUpperCase());return '<span class="pk"><span class="bigcap sm" style="--fc:'+fcol(i?i.key.f:"TH")+'">'+(k===" "?"space":esc(k.toUpperCase()))+'</span>'+c+(c===1?" miss":" misses")+'</span>'}).join("")+'</div></div>':"";
   setView('<div class="result">'+panel({eyebrow:'Lesson '+n+' · '+esc(L.stage),title:esc(L.title),status:statusChip(passed),
-    msg:esc(msg),stats:pstat(Math.round(wpm),"WPM","target "+L.wpm)+pstat(Math.round(acc*100)+"%","Accuracy","needs 95%")+pstat(time,"Time"),
+    msg:esc(msg),stats:pstat(Math.round(wpm),"WPM","target "+L.wpm)+pstat(pctTxt(acc),"Accuracy","needs 95%")+pstat(time,"Time"),
     body:(passed?'<div class="stars-lg">'+starsSVG(stars,36,true)+'</div>':"")+keys,foot})+'</div>',"results");
   UI.escape=()=>renderLearn();
 }
@@ -2254,7 +2254,7 @@ function testDone(res){
   const eyebrow='Test · '+dur+' s · '+POOL_NAME[o.pool]+(opts.length?" · "+opts.join(", "):"");
   const legend='<span><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true" style="vertical-align:middle;margin-right:6px"><path d="M3 3l8 8m0-8l-8 8" stroke="var(--error)" stroke-width="2" stroke-linecap="round"/></svg>mistake</span>';
   setView('<div class="result">'+panel({wide:1,eyebrow,title:"Test done",status:isBest?'<span class="status ok">'+ico("check",14)+'New best</span>':"",
-    stats:pstat(Math.round(res.wpm),"WPM",isBest?"your best at "+dur+" s":"",'lead')+pstat(Math.round(res.raw),"Raw WPM")+pstat(Math.round(res.acc*100)+"%","Accuracy")+pstat(res.correct+' · '+res.mistakes,"Correct · mistakes"),statsCls:"c4",
+    stats:pstat(Math.round(res.wpm),"WPM",isBest?"your best at "+dur+" s":"",'lead')+pstat(Math.round(res.raw),"Raw WPM")+pstat(pctTxt(res.acc),"Accuracy")+pstat(res.correct+' · '+res.mistakes,"Correct · mistakes"),statsCls:"c4",
     body:'<div><h3>Speed during the test</h3><div class="legrow">'+legend+'</div><div class="chart-wrap">'+svg+'</div></div>',
     foot:btn("Change settings",{act:"t-settings",cls:"ghost"})+btn("Share",{act:"sh-test",cls:"ghost"})+btn("Try again",{act:"t-start",primary:1,hint:ENTER})})+'</div>',"results");
   UI.escape=()=>renderTest();
@@ -2452,7 +2452,7 @@ function stepFinished(){
   const nx=SESSION.steps[SESSION.i];
   if(!nx)return sessionDone();
   setView('<div class="result">'+panel({eyebrow:'Step '+SESSION.i+' of '+SESSION.steps.length,title:esc(st.label)+' done',
-    stats:pstat(Math.round(r.wpm),"WPM")+pstat(Math.round(r.acc*100)+"%","Accuracy"),statsCls:"c2",body:upNextHTML(nx),
+    stats:pstat(Math.round(r.wpm),"WPM")+pstat(pctTxt(r.acc),"Accuracy"),statsCls:"c2",body:upNextHTML(nx),
     foot:btn("End session",{act:"s-end",cls:"quiet",icon:"x"})+btn("Continue",{act:"s-continue",primary:1,hint:ENTER})})+'</div>',"session");
 }
 function sessionDone(){
@@ -2731,18 +2731,18 @@ function startCustom(id){
 }
 function customResults(){
   const a=RUN.agg,id=RUN.custom,title=RUN.title,target=S.settings.target;
-  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=pctOf(acc)>=95;
-  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(pctOf(acc)>=98&&Math.round(wpm)>=target+5)stars=3}
+  const wpm=wpmCalc(a.chars,a.ms),acc=a.presses?a.correct/a.presses:1,passed=acc>=.95;
+  let stars=0;if(passed){stars=1;if(Math.round(wpm)>=target)stars=2;if(acc>=.98&&Math.round(wpm)>=target+5)stars=3}
   const r=S.custom[id]||(S.custom[id]={wpm:0,acc:0,stars:0,attempts:0,last:0});
   const prevStars=r.stars;
   r.attempts++;r.last=Date.now();r.stars=Math.max(r.stars,stars);r.wpm=Math.max(r.wpm,wpm);r.acc=Math.max(r.acc,acc);rewardsLesson(passed&&stars>prevStars);
   const ids=Object.keys(S.custom);if(ids.length>100)ids.sort((x,y)=>S.custom[x].last-S.custom[y].last).slice(0,ids.length-100).forEach(k=>delete S.custom[k]);
   const pk=Object.entries(a.missBy).sort((x,y)=>y[1]-x[1]).slice(0,3);
   const sec=Math.round(a.ms/1000),time=Math.floor(sec/60)+":"+String(sec%60).padStart(2,"0");
-  const msg=passed?"":"Accuracy "+Math.round(acc*100)+"%. You need 95% to pass. Slow down a little and keep your eyes on the screen.";
+  const msg=passed?"":"Accuracy "+pctTxt(acc)+". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
   const keys=pk.length?'<div><span class="label">Keys to watch</span><div class="pkrow" style="margin-top:10px">'+pk.map(([k,c])=>{const i=charInfo(k)||charInfo(k.toUpperCase());return '<span class="pk"><span class="bigcap sm" style="--fc:'+fcol(i?i.key.f:"TH")+'">'+(k===" "?"space":esc(k.toUpperCase()))+'</span>'+c+(c===1?" miss":" misses")+'</span>'}).join("")+'</div></div>':"";
   setView('<div class="result">'+panel({eyebrow:"From Claude",title:esc(title),status:statusChip(passed),msg:msg?esc(msg):"",
-    stats:pstat(Math.round(wpm),"WPM","target "+target)+pstat(Math.round(acc*100)+"%","Accuracy","needs 95%")+pstat(time,"Time"),
+    stats:pstat(Math.round(wpm),"WPM","target "+target)+pstat(pctTxt(acc),"Accuracy","needs 95%")+pstat(time,"Time"),
     body:(passed?'<div class="stars-lg">'+starsSVG(stars,36,true)+'</div>':"")+keys,
     foot:'<button type="button" class="btn ghost" data-act="c-run" data-id="'+esc(id)+'">Try again</button>'+btn("Back to Coach",{act:"to-coach",primary:1,hint:ENTER})})+'</div>',"results");
   UI.escape=()=>renderCoach();
@@ -3104,9 +3104,9 @@ const ACH=[
   {id:"wpm-30",title:"30 WPM",desc:"A test at 30 WPM or more, with 90% accuracy or better",cat:"speed",icon:"bolt",test:()=>testOk(30)},
   {id:"wpm-40",title:"40 WPM",desc:"A test at 40 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(40)},
   {id:"wpm-60",title:"60 WPM",desc:"A test at 60 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(60)},
-  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&pctOf(t.acc)>=98)},
+  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some(t=>t.dur>=30&&t.acc>=.98)},
   {id:"home-strong",title:"Home row mastered",desc:"Make every home row key strong",cat:"accuracy",icon:"shield",test:()=>[..."asdfjkl;"].every(k=>{const v=strengthOf(S.keys[k]);return v!=null&&v>=1})},
-  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>Math.round(t.wpm)>Math.round(S.baseline.wpm)&&pctOf(t.acc)>=95)},
+  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some(t=>t.wpm>S.baseline.wpm&&t.acc>=.95)},
   {id:"goal-5",title:"Five good days",desc:"Reach your daily goal on 5 days",cat:"streak",icon:"calendar",test:()=>Object.values(S.days).filter(d=>d.ms>=S.settings.goal*60000).length>=5},
   {id:"level-5",title:"Level 5",desc:"Reach level 5",cat:"special",icon:"chevron",test:()=>levelInfo().level>=5},
   {id:"level-10",title:"Level 10",desc:"Reach level 10",cat:"special",icon:"chevron",test:()=>levelInfo().level>=10},
@@ -3205,7 +3205,7 @@ function countUp(){
   const t0=performance.now(),D=500;
   const step=t=>{
     const p=Math.min(1,(t-t0)/D),k=1-Math.pow(1-p,3);
-    items.forEach(it=>{if(it.e.isConnected)it.e.textContent=p>=1?it.f:it.f.replace(/\d+/g,n=>String(Math.round(+n*k)))});
+    items.forEach(it=>{if(it.e.isConnected)it.e.textContent=p>=1?it.f:it.f.replace(/\d+(?:\.\d+)?/g,n=>n.includes(".")?(+n*k).toFixed(1):String(Math.round(+n*k)))});
     if(p<1)requestAnimationFrame(step);
   };
   step(t0);requestAnimationFrame(step);

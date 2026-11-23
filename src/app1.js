@@ -258,6 +258,6 @@ function genLesson(n){
   for(let a=0;a<12;a++){r=[1,2,3].map(s=>genStep(n,s).trim());if(r.every(t=>t&&!BADDEAD.test(t)&&!/ {2}/.test(t)))return r}
   return r;
 }
-/* pass, stars and badges compare the same whole percent the screen shows (94.6% shows as 95% and counts as 95%) */
-const pctOf=a=>Math.round(a*100);
+/* accuracy on result screens: one decimal, rounded down, so 94.96% reads 94.9% and never looks like a pass */
+const pctTxt=a=>{const v=Math.floor(a*1000+1e-6)/10;return (Number.isInteger(v)?v:v.toFixed(1))+"%"};
 function wpmCalc(chars,ms){return ms>0?(chars/5)/(ms/60000):0}
