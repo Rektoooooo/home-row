@@ -2,6 +2,15 @@
 
 A free touch-typing trainer that runs in the browser. Learn to type with all ten fingers, without looking.
 
+**Try it:** [home-row-lime.vercel.app](https://home-row-lime.vercel.app)
+
+![The Home Row landing page: a typing demo over a keyboard](docs/screenshots/landing.webp)
+
+<p>
+  <img src="docs/screenshots/learn.png" alt="The Learn tab: today's lesson, level and the course map" width="49%">
+  <img src="docs/screenshots/lesson.png" alt="Lesson 1: the text to type, the next key lit on the keyboard and the finger that presses it" width="49%">
+</p>
+
 - **22 lessons**: home row, top row and bottom row, then capitals, punctuation and numbers. A one-minute typing check at
   the start gives you a personal plan.
 - **Adaptive practice**: every round is built around your weakest key or letter pair.
@@ -24,6 +33,7 @@ site/       the website, served as is
   app/index.html   the trainer (built)
   assets/          icon, link preview image
 vercel.json static hosting settings for Vercel
+docs/       screenshots for this README
 ```
 
 ## Build
