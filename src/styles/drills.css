@@ -1,0 +1,7 @@
+/* Practice / Test / Today's session. Most of the legacy CSS for these screens already lives in app.css; this file only adds
+   what the shadcn ToggleGroup / Toggle need to look like the legacy segmented control. */
+.seg [role="radio"][data-state="on"],.seg button[data-state="on"]{background:var(--surface);color:var(--fg);box-shadow:0 0 0 1px var(--line),0 2px 0 var(--cap-edge)}
+.seg [role="radio"]{font-weight:600}
+.seg button:focus-visible{outline:2px solid var(--fg);outline-offset:2px}
+.mtarea.field-sizing-fixed{field-sizing:fixed}
+.pop.in-chart{position:fixed;transform:translate(-50%,-100%);margin-top:-8px}

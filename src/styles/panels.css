@@ -1,0 +1,15 @@
+/* Progress, Coach and Guide: the few legacy rules app.css does not carry (legacy/src/p1.html). The rest of the legacy CSS
+   (tiles, calendar, chart, heat ramp, achievements, coach cards, guide) already lives in app.css. */
+.confirm{display:grid;gap:12px;padding:14px;border-radius:var(--radius);background:var(--surface-2)}
+.confirm .actions{display:flex;flex-wrap:wrap;gap:8px}
+.save-line{font:500 15px var(--font-display);color:var(--fg-2)}
+.pk-wrap{display:contents}
+/* tooltips on SVG cells: keep focus ring like legacy */
+.cal rect[data-slot="tooltip-trigger"]{outline:none}
+.cal rect:focus-visible:not(.today){stroke:var(--fg);stroke-width:2}
+.ach:focus-visible{box-shadow:0 0 0 2px var(--fg)}
+.chart-anchor{position:absolute;width:1px;height:1px;pointer-events:none}
+/* Tailwind's reset drops list markers */
+.psteps{list-style:decimal}
+.guide ul{list-style:disc}
+.guide a{text-decoration:underline}

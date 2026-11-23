@@ -1,6 +1,6 @@
 /* LEARN: Today card, Course map, Lessons list, lesson intro, the 3-step run, step summaries and lesson results.
    Ported from legacy/src/app4.js (renderLearn, openIntro, startLesson, runStep, stepDone, showResults). */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronLeft, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -19,6 +19,7 @@ import { navigate, takePending } from "@/lib/route";
 import { reduceMotion } from "@/ui/engine";
 import { countUp } from "@/ui/countup";
 import { cn } from "@/lib/utils";
+import { SessionFlow } from "@/views/Session";
 
 /* bars grow from 0 on a fresh screen (not under reduced motion) */
 function useGrown(v: number) {
@@ -87,7 +88,7 @@ function LessonRow({ l, nx, onOpen }: { l: any; nx: number; onOpen: (n: number) 
   );
 }
 
-function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSession: (nx: number) => void }) {
+function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSession: () => void }) {
   const nx = nextLessonN(), L = nx ? LESSONS[nx - 1] : null, m = minutesToday(), g = S.settings.goal, st = streak(), wk = weakestKey() as string | null;
   const bar = useGrown(Math.min(100, m / g * 100));
   const lc = learnedChars(), ids = new Set(idsFor([...lc]) as string[]);
@@ -113,8 +114,7 @@ function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSessi
         </div>
         <div className="today-act">
           <div className="actions">
-            {/* TODO(phase4): Today's session; for now it opens the next lesson */}
-            <Btn primary hint={ENTER} onClick={() => onSession(nx || 1)}>Start today's session</Btn>
+            <Btn primary hint={ENTER} onClick={onSession}>Start today's session</Btn>
             {L ? <Btn variant="outline" onClick={() => onOpen(nx)}>Lesson {nx} only</Btn> : <Btn variant="outline" onClick={() => onOpen(1)}>Repeat lesson 1</Btn>}
           </div>
           <p className="small muted" style={{ marginTop: 10 }}>About 10 minutes: warm-up, lesson, practice, test.</p>
@@ -140,7 +140,7 @@ function stepNames(texts: string[]) {
   return [STEP_NAMES[0], STEP_NAMES[1], real < t.length / 2 ? "Rhythm" : "Words"];
 }
 interface Run { n: number; step: number; texts: string[]; names: string[]; agg: { ms: number; chars: number; presses: number; correct: number; missBy: Record<string, number> }; }
-type Screen = { k: "list" } | { k: "intro"; n: number } | { k: "stage"; id: number } | { k: "summary"; res: any; s: number } | { k: "results"; r: any };
+type Screen = { k: "intro"; n: number } | { k: "stage"; id: number } | { k: "summary"; res: any; s: number } | { k: "results"; r: any };
 
 function StepDone({ run, res, s, onNext, onEsc }: { run: Run; res: any; s: number; onNext: () => void; onEsc: () => void }) {
   const N = run.texts.length, n = run.n;
@@ -157,12 +157,12 @@ function StepDone({ run, res, s, onNext, onEsc }: { run: Run; res: any; s: numbe
   );
 }
 
-function Results({ r, onAgain, onNext }: { r: any; onAgain: () => void; onNext: () => void }) {
+function Results({ r, onAgain, onNext, inSession, onContinue }: { r: any; onAgain: () => void; onNext: () => void; inSession?: boolean; onContinue?: () => void }) {
   const { n, L, passed, stars, wpm, acc, pk, time, last } = r;
   useEffect(() => { countUp(); }, []);
   const msg = passed ? (last ? "You finished the course." : "Lesson " + (n + 1) + " is unlocked.") : "Accuracy " + pctTxt(acc) + ". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
   const again = <Btn variant="outline" onClick={onAgain}>Try again</Btn>;
-  const foot = passed
+  const foot = inSession ? <>{again}<Btn primary hint={ENTER} onClick={onContinue}>Continue session</Btn></> : passed
     ? (last ? <>{again}<Btn primary hint={ENTER} onClick={() => navigate("learn")}>Back to lessons</Btn></> : <>{again}<Btn primary hint={ENTER} onClick={onNext}>Next lesson</Btn></>)
     : <><Btn variant="outline" onClick={() => navigate("learn")}>Back to lessons</Btn><Btn primary hint={ENTER} onClick={onAgain}>Try again</Btn></>;
   return (
@@ -178,11 +178,13 @@ function Results({ r, onAgain, onNext }: { r: any; onAgain: () => void; onNext: 
   );
 }
 
-export function LearnFlow() {
-  useProgress();
-  const [screen, setScreen] = useState<Screen>(() => { const p = takePending(); return p ? { k: "intro", n: p } : { k: "list" }; });
+/* the session wiring a lesson step needs: the bar above every screen, the lesson's aggregate for the step summary, and "Continue session" */
+export interface LessonSession { bar: ReactNode; onResult: (agg: { ms: number; chars: number; presses: number; correct: number }) => void; onContinue: () => void }
+
+/* intro → 3 steps → results for one lesson; also the "Lesson" step of today's session (legacy openIntro/startLesson/runStep/stepDone/showResults) */
+export function LessonFlow({ n0, session, onExit }: { n0: number; session?: LessonSession; onExit: () => void }) {
+  const [screen, setScreen] = useState<Screen>({ k: "intro", n: n0 });
   const run = useRef<Run | null>(null), ids = useRef(0);
-  const toList = useCallback(() => setScreen({ k: "list" }), []);
   const openIntro = (n: number) => setScreen({ k: "intro", n });
   const runStage = () => setScreen({ k: "stage", id: ++ids.current });
   const startLesson = (n: number) => {
@@ -194,6 +196,7 @@ export function LearnFlow() {
     const rn = run.current!, n = rn.n, L = LESSONS[n - 1], a = rn.agg;
     const out = applyLessonResult(n, a);
     rewardsLesson(out.celebrate);
+    session?.onResult({ ms: a.ms, chars: a.chars, presses: a.presses, correct: a.correct });
     const pk = Object.entries(a.missBy).sort((x, y) => y[1] - x[1]).slice(0, 3);
     const sec = Math.round(a.ms / 1000), time = Math.floor(sec / 60) + ":" + String(sec % 60).padStart(2, "0");
     setScreen({ k: "results", r: { n, L, passed: out.passed, stars: out.stars, wpm: out.wpm, acc: out.acc, pk, time, last: n === LESSONS.length } });
@@ -205,21 +208,32 @@ export function LearnFlow() {
     if (rn.step < rn.texts.length) setScreen({ k: "summary", res, s: rn.step });
     else showResults();
   };
+  const bar = session?.bar ?? null;
 
   if (screen.k === "stage") {
     const rn = run.current!, N = rn.texts.length;
-    return <TypingStage key={screen.id + "-" + rn.step} opts={{
+    return <>{bar}<TypingStage key={screen.id + "-" + rn.step} opts={{
       crumb: "Lesson " + rn.n + " · Step " + rn.step + " of " + N + " · " + rn.names[rn.step - 1], text: rn.texts[rn.step - 1], mode: S.settings.stop ? "stop" : "free",
       focus: [...ctx(rn.n).all], onFinish: stepDone, onBack: () => navigate("learn"),
-    }} />;
+    }} /></>;
   }
-  if (screen.k === "intro") return <div key={"intro" + screen.n} className="view-in"><Intro n={screen.n} onBack={toList} onStart={() => startLesson(screen.n)} /></div>;
-  if (screen.k === "summary") return <div key={"sum" + screen.s} className="view-in"><StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={toList} /></div>;
-  if (screen.k === "results") return <div key="results" className="view-in"><ResultsScreen r={screen.r} onAgain={() => startLesson(screen.r.n)} onNext={() => openIntro(screen.r.n + 1)} onEsc={toList} /></div>;
-  return <div key="list" className="view-in"><LearnList onOpen={openIntro} onSession={openIntro} /></div>;
+  if (screen.k === "intro") return <div key={"intro" + screen.n} className="view-in">{bar}<Intro n={screen.n} onBack={onExit} onStart={() => startLesson(screen.n)} /></div>;
+  if (screen.k === "summary") return <div key={"sum" + screen.s} className="view-in">{bar}<StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={onExit} /></div>;
+  const r = screen.r;
+  return <div key="results" className="view-in">{bar}<ResultsScreen r={r} inSession={!!session} onContinue={session?.onContinue} onAgain={() => startLesson(r.n)} onNext={() => openIntro(r.n + 1)} onEsc={onExit} /></div>;
 }
 
-function ResultsScreen(p: { r: any; onAgain: () => void; onNext: () => void; onEsc: () => void }) {
+type Top = { k: "list" } | { k: "lesson"; n: number } | { k: "session" };
+export function LearnFlow() {
+  useProgress();
+  const [top, setTop] = useState<Top>(() => { const p = takePending(); return p ? { k: "lesson", n: p } : { k: "list" }; });
+  const toList = useCallback(() => setTop({ k: "list" }), []);
+  if (top.k === "lesson") return <LessonFlow n0={top.n} onExit={toList} />;
+  if (top.k === "session") return <SessionFlow onExit={toList} />;
+  return <div key="list" className="view-in"><LearnList onOpen={n => setTop({ k: "lesson", n })} onSession={() => setTop({ k: "session" })} /></div>;
+}
+
+function ResultsScreen(p: { r: any; onAgain: () => void; onNext: () => void; onEsc: () => void; inSession: boolean; onContinue?: () => void }) {
   useEscape(p.onEsc);
-  return <Results r={p.r} onAgain={p.onAgain} onNext={p.onNext} />;
+  return <Results r={p.r} onAgain={p.onAgain} onNext={p.onNext} inSession={p.inSession} onContinue={p.onContinue} />;
 }
