@@ -79,7 +79,7 @@ function renderProgress(){
   const les=LESSONS.map(l=>{const r=S.lessons[l.n],lock=!unlocked(l.n);
     return '<button type="button" class="crow" '+(lock?'aria-disabled="true"':'data-act="go-lesson" data-n="'+l.n+'"')+'><span class="lnum">'+l.n+'</span><span class="t">'+esc(l.title)+'</span><span class="m">'+(lock?'Locked':starsSVG(r?r.stars:0,14)+(r&&r.attempts?'<span>'+Math.round(r.wpm)+' WPM</span><span>'+Math.round(r.acc*100)+'%</span>':'<span>Not started</span>'))+'</span></button>'}).join("");
   const tests=S.tests.slice(-10).reverse().map(t=>{const d=new Date(t.ts);return '<tr><td>'+dLabel(d)+'</td><td>'+t.dur+' s</td><td>'+(POOL_NAME[t.pool]||t.pool)+(t.opts?" · "+[...t.opts].map(c=>({c:"capitals",p:"punctuation",n:"numbers"})[c]).filter(Boolean).join(", "):"")+'</td><td>'+Math.round(t.wpm)+'</td><td>'+Math.round(t.acc*100)+'%</td></tr>'}).join("");
-  setView('<div class="view-head"><h1>Progress</h1></div>'+levelHeroHTML()+recapHTML()+tiles+shareCardHTML()+
+  setView('<div class="view-head"><h1>Progress</h1></div>'+levelHeroHTML()+recapHTML()+tiles+
     '<div class="pg-duo"><section class="sect-gap"><h2>Practice calendar</h2><p class="small muted" style="margin-bottom:12px">Last 12 weeks. The darkest squares mean you reached your daily goal.</p>'+calendarSVG()+
     '<div class="cal-leg"><span>Less</span><svg width="64" height="14" viewBox="0 0 64 14" aria-hidden="true">'+[0,30,55,85].map((p,i)=>'<rect x="'+i*17+'" width="14" height="14" rx="3" style="fill:color-mix(in oklab,var(--f-middle) '+p+'%,var(--surface-2))"/>').join("")+'</svg><span>More</span></div></section>'+
     '<section class="sect-gap"><h2>Speed trend</h2><p class="small muted">Last 30 days, in words per minute.</p>'+tr.html+'</section></div>'+

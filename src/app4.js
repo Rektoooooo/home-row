@@ -1,6 +1,6 @@
 
 /* ============================ VIEWS ============================ */
-const TABS=["learn","practice","test","progress","guide"];
+const TABS=["learn","practice","test","progress","coach","guide"];
 let TAB="learn",RUN=null;
 const STAR='<path d="M12 2.5l3 6.4 7 .8-5.2 4.8 1.5 6.9L12 17.7 5.7 21.4l1.5-6.9L2 9.7l7-.8z" stroke-width="1.6" stroke-linejoin="round"/>';
 const starsSVG=(n,sz,pop)=>'<span class="stars'+(pop?" pp":"")+'" role="img" aria-label="'+n+' of 3 stars">'+[1,2,3].map(i=>'<svg width="'+sz+'" height="'+sz+'" viewBox="0 0 24 24" class="'+(i<=n?"star-on":"star-off")+'" style="--i:'+(i-1)+'" aria-hidden="true">'+STAR+'</svg>').join("")+"</span>";
@@ -39,7 +39,7 @@ function setView(html,kind){
   viewHook(kind);
 }
 let PENDING=0;
-function renderTab(){({learn:renderLearn,practice:renderPractice,test:renderTest,progress:renderProgress,guide:renderGuide})[TAB]()}
+function renderTab(){({learn:renderLearn,practice:renderPractice,test:renderTest,progress:renderProgress,coach:renderCoach,guide:renderGuide})[TAB]()}
 function route(){
   SESSION=null;
   const h=(location.hash||"").replace(/^#/,"");TAB=TABS.includes(h)?h:"learn";
@@ -93,9 +93,7 @@ function renderLearn(){
     '<div class="today-act"><div class="actions">'+btn("Start today's session",{act:"s-start",primary:1,hint:ENTER})+
     (L?btn("Lesson "+nx+" only",{act:"open",n:nx,cls:"ghost"}):btn("Repeat lesson 1",{act:"open",n:1,cls:"ghost"}))+'</div>'+
     '<p class="small muted" style="margin-top:10px">About 10 minutes: warm-up, lesson, practice, test.</p></div></div>';
-  h+=coachPanelHTML();
   h+='<section class="section"><h2>Course map</h2><div class="card map-card" style="margin-top:12px"><svg class="kb" id="map-kb" role="img" aria-label="Keyboard showing the keys you have learned"></svg><p class="small muted cap">Keys you know light up as you learn them.</p></div></section>';
-  h+=fromClaudeHTML();
   h+='<section class="section"><h2>Lessons</h2>';
   let stage="";const cnt={};LESSONS.forEach(l=>{const c=cnt[l.stage]||(cnt[l.stage]={d:0,t:0});c.t++;if(lessonDone(l.n))c.d++});
   LESSONS.forEach(l=>{
@@ -176,7 +174,7 @@ view.addEventListener("click",e=>{
   else if(act==="start")startLesson(n);
   else if(act==="next-step"){RUN.step++;runStep()}
   else if(act==="stage-back"&&UI.opts&&UI.opts.back){UI.opts.back()}
-  else if(act==="to-learn"||act==="stage-back"){if(location.hash!=="#learn")location.hash="learn";else route()}
+  else if(act==="to-learn"||act==="stage-back"||act==="to-coach"){const t=act==="to-coach"||RUN&&RUN.custom?"coach":"learn";if(location.hash!=="#"+t)location.hash=t;else route()}
   else if(act==="go-lesson"){PENDING=n;if(location.hash!=="#learn")location.hash="learn";else route()}
   else if(act==="stage-restart"){if(EX)EX.restart()}
   else if(act==="tip-x"){const t=$("tip");if(t)t.hidden=true;if(EX)sink.focus({preventScroll:true})}
@@ -254,7 +252,7 @@ function wireSettings(){
     if(id==="set-soundpack")soundPreview(S.settings.soundPack);
     if(id==="set-layout")rebuildKeyboards();
   });
-  dlg.addEventListener("close",()=>{if(EX&&!EX.done)EX.refreshHints();if(UI.kind==="learn"||UI.kind==="idle")renderTab()});
+  dlg.addEventListener("close",()=>{if(EX&&!EX.done)EX.refreshHints();if(UI.kind==="learn"||UI.kind==="idle"||UI.kind==="coach")renderTab()});
   $("set-stop").addEventListener("change",e=>{S.settings.stop=e.target.checked;settingChanged()});
   $("set-weekly").addEventListener("change",e=>{
     S.settings.weekly=e.target.checked;settingChanged();

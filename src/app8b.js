@@ -1,12 +1,11 @@
 
-/* ---- Learn tab: Coach panel and From Claude ---- */
+/* ---- Coach tab: ask Claude (claude.ai) or paste its reply (website), and the lessons it wrote ---- */
 const fmtDay=ts=>{const d=new Date(ts);return d.getDate()+" "+MON[d.getMonth()]};
 function coachPanelHTML(){
-  if(!window.claude)return pastePanelHTML();
   if(!SAMPLE||!ACCT||coachOff||!LESSONS.some(l=>lessonDone(l.n)))return "";
   const body=ASK.ok?'<p class="small muted">New lesson added below.</p>':ASK.err?'<p class="small coach-err" role="alert">'+esc(ASK.err)+'</p>':"";
   const foot=ASK.running?'<span class="grow muted thinking" role="status">Thinking<i>.</i><i>.</i><i>.</i></span>'+btn("Stop",{act:"c-stop",cls:"quiet"}):btn("Ask Claude for a lesson",{act:"c-ask",cls:"ghost"});
-  return '<section class="section-s">'+panel({flat:1,tag:"h2",eyebrow:"Coach",title:"A lesson made for you",
+  return '<section class="section-s">'+panel({flat:1,tag:"h2",eyebrow:"Ask Claude",title:"A lesson made for you",
     msg:"Claude looks at your weakest keys and letter pairs and writes a short lesson for you. It uses your Claude usage.",body,foot})+'</section>';
 }
 function lessonCardHTML(l){
@@ -17,11 +16,21 @@ function lessonCardHTML(l){
   return panel({flat:1,tag:"h3",eyebrow:(l.id.indexOf("weekly-")===0?"This week · made by Claude":l.by==="app"?"Made in the app":"Made in chat")+esc(date),title:esc(l.title),
     msg:l.why?'<span class="clamp2">'+esc(l.why)+'</span>':"",body:'<div class="cmeta">'+meta+'</div>',foot});
 }
-function fromClaudeHTML(){
-  if(!COACH.lessons.length&&!COACH.note&&!COACH.dropped)return "";
-  let h='<section class="section-s"><div class="stage-h"><h2>From Claude</h2><span class="scount">'+COACH.lessons.length+(COACH.lessons.length===1?" lesson":" lessons")+'</span></div>';
+function renderCoach(){
+  const ready=LESSONS.some(l=>lessonDone(l.n));
+  let h='<div class="view-head"><h1>Coach</h1><p>Claude reads your progress and writes short lessons for the keys you miss most.</p></div>';
+  if(!ready)h+='<div class="empty"><p>Pass lesson 1 first. Claude needs some of your typing to write lessons for you.</p>'+btn("Go to lesson 1",{act:"go-lesson",n:1,cls:"ghost"})+'</div>';
+  else h+=window.claude?coachPanelHTML():pastePanelHTML();
+  h+=coachLessonsHTML(ready);
+  if(window.claude)h+=shareCardHTML();
+  setView(h,"coach");
+}
+function coachLessonsHTML(ready){
+  const n=COACH.lessons.length;
+  if(!n&&!COACH.note&&!COACH.dropped&&!ready)return "";
+  let h='<section class="section-s"><div class="stage-h"><h2>Your lessons</h2>'+(n?'<span class="scount">'+n+(n===1?" lesson":" lessons")+'</span>':"")+'</div>';
   if(COACH.note)h+='<div class="coach-note"><span class="label">Claude\'s note'+(COACH.note.at?" · "+fmtDay(COACH.note.at):"")+'</span><p>'+esc(COACH.note.text)+'</p></div>';
-  if(COACH.lessons.length)h+='<div class="cgrid">'+COACH.lessons.map(lessonCardHTML).join("")+'</div>';
+  h+=n?'<div class="cgrid">'+COACH.lessons.map(lessonCardHTML).join("")+'</div>':'<div class="empty">No lessons yet. '+(window.claude?"Ask Claude above, or ask in any Claude chat.":"Paste Claude's reply above and they show up here.")+'</div>';
   if(COACH.dropped)h+='<p class="small muted" style="margin-top:12px">'+COACH.dropped+(COACH.dropped===1?" lesson from Claude couldn't":" lessons from Claude couldn't")+' be used on this keyboard.</p>';
   return h+'</section>';
 }
@@ -30,13 +39,11 @@ function fromClaudeHTML(){
 let PASTE={open:false,text:"",msg:"",err:false};
 const keepScroll=fn=>{const y=scrollY;fn();scrollTo(0,y)};
 function pastePanelHTML(){
-  if(!LESSONS.some(l=>lessonDone(l.n)))return "";
   const msg='<p class="small '+(PASTE.err?"coach-err":"muted")+'" id="paste-msg" role="'+(PASTE.err?"alert":"status")+'">'+esc(PASTE.msg)+'</p>';
   const body=PASTE.open?'<label class="vh" for="paste-in">Claude\'s reply</label><textarea id="paste-in" class="mtarea" rows="6" maxlength="40000" spellcheck="false" placeholder="Paste Claude\'s whole reply here">'+esc(PASTE.text)+'</textarea>'+msg:
-    '<ol class="psteps"><li><b>Copy your progress.</b> It tells Claude your weakest keys and how to write the lessons.</li><li><b>Paste it into a chat with Claude</b> on claude.ai or in the Claude app.</li><li><b>Paste Claude\'s reply here.</b> Its lessons appear below, under From Claude.</li></ol>'+msg;
+    '<ol class="psteps"><li><b>Copy your progress.</b> It tells Claude your weakest keys and how to write the lessons.</li><li><b>Paste it into a chat with Claude</b> on claude.ai or in the Claude app.</li><li><b>Paste Claude\'s reply here.</b> Its lessons appear below.</li></ol>'+msg;
   const foot=PASTE.open?btn("Cancel",{act:"p-cancel",cls:"quiet"})+btn("Add lessons",{act:"p-add"}):btn("Copy my progress",{act:"p-copy",cls:"ghost"})+btn("Paste Claude's reply",{act:"p-open"});
-  return '<section class="section-s">'+panel({flat:1,tag:"h2",eyebrow:"Coach",title:"Lessons written for you",
-    msg:"Claude can read your progress and write short lessons for the keys you miss most.",body,foot})+'</section>';
+  return '<section class="section-s">'+panel({flat:1,tag:"h2",eyebrow:"Three steps",title:"Get new lessons from Claude",msg:"",body,foot})+'</section>';
 }
 function pasteMsg(text,err){PASTE.msg=text;PASTE.err=!!err;const m=$("paste-msg");if(m){m.textContent=text;m.className="small "+(err?"coach-err":"muted");m.setAttribute("role",err?"alert":"status")}}
 function pasteCopy(b){
@@ -92,20 +99,20 @@ function pasteAdd(){
   coachMutate(raw=>{
     const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter(x=>!(isObj(x)&&ids.has(x.id)));
     raw.lessons=r.added.concat(ls).slice(0,20);if(r.note)raw.note=r.note;return raw;
-  }).then(()=>{if(UI.kind==="learn")scrollTo(0,y)});
+  }).then(()=>{if(UI.kind==="coach")scrollTo(0,y)});
 }
 
 /* ---- running a custom lesson (reuses the lesson flow) ---- */
 const customById=id=>COACH.lessons.find(l=>l.id===id);
 function openCustomIntro(id){
-  const l=customById(id);if(!l)return renderLearn();
+  const l=customById(id);if(!l)return renderCoach();
   const steps='<ol class="csteps">'+l.steps.map(s=>'<li><span class="cname">'+esc(s.name)+'</span><code>'+esc(s.text.length>48?s.text.slice(0,48)+"…":s.text)+'</code></li>').join("")+'</ol>';
   setView('<div class="intro">'+panel({eyebrow:l.by==="app"?"From Claude · made in the app":"From Claude",title:esc(l.title),msg:esc(l.why),body:steps,
-    foot:btn("Back to lessons",{act:"to-learn",cls:"quiet",icon:"back"})+'<button type="button" class="btn" data-act="c-run" data-id="'+esc(l.id)+'" data-primary>Start lesson<span class="kh" aria-hidden="true">'+ENTER+'</span></button>'})+'</div>',"intro");
-  UI.escape=()=>renderLearn();
+    foot:btn("Back to Coach",{act:"to-coach",cls:"quiet",icon:"back"})+'<button type="button" class="btn" data-act="c-run" data-id="'+esc(l.id)+'" data-primary>Start lesson<span class="kh" aria-hidden="true">'+ENTER+'</span></button>'})+'</div>',"intro");
+  UI.escape=()=>renderCoach();
 }
 function startCustom(id){
-  const l=customById(id);if(!l)return renderLearn();
+  const l=customById(id);if(!l)return renderCoach();
   RUN={custom:id,title:l.title,step:1,texts:l.steps.map(s=>s.text),names:l.steps.map(s=>s.name),agg:{ms:0,chars:0,presses:0,correct:0,missBy:{}}};
   runStep();
 }
@@ -124,11 +131,11 @@ function customResults(){
   setView('<div class="result">'+panel({eyebrow:"From Claude",title:esc(title),status:statusChip(passed),msg:msg?esc(msg):"",
     stats:pstat(Math.round(wpm),"WPM","target "+target)+pstat(Math.round(acc*100)+"%","Accuracy","needs 95%")+pstat(time,"Time"),
     body:(passed?'<div class="stars-lg">'+starsSVG(stars,36,true)+'</div>':"")+keys,
-    foot:'<button type="button" class="btn ghost" data-act="c-run" data-id="'+esc(id)+'">Try again</button>'+btn("Back to lessons",{act:"to-learn",primary:1,hint:ENTER})})+'</div>',"results");
-  UI.escape=()=>renderLearn();
+    foot:'<button type="button" class="btn ghost" data-act="c-run" data-id="'+esc(id)+'">Try again</button>'+btn("Back to Coach",{act:"to-coach",primary:1,hint:ENTER})})+'</div>',"results");
+  UI.escape=()=>renderCoach();
 }
 
-/* ---- Progress tab: Share with Claude ---- */
+/* ---- Coach tab (claude.ai): Share with Claude ---- */
 /* without an account Claude can't read the progress, so the card copies the whole progress instead of a prompt */
 const shareLocal=()=>!window.claude||saveStatus==="local"||saveStatus==="offline"||saveStatus==="failed";
 /* inside claude.ai the copy can be moved into the owner's account; on the website it only asks for advice and lessons */
@@ -147,11 +154,11 @@ function coachAsk(){
 }
 function shareCardHTML(){
   if(shareLocal())return '<section class="sect-gap">'+panel({flat:1,tag:"h2",eyebrow:"Share with Claude",title:"Send your progress to Claude",
-    msg:window.claude?"This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons.":"Copy your progress and paste it into a chat with Claude. Claude tells you what to work on and writes lessons for your weakest keys. Paste its reply in Learn, under Coach, and the lessons appear there.",
+    msg:"This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons.",
     body:'<textarea class="promptbox exportbox" id="share-box" readonly rows="4" hidden aria-label="Your progress, ready to copy"></textarea><p class="small muted" id="share-msg" role="status"></p>',
     foot:'<button type="button" class="btn ghost" id="share-copy" data-act="c-copy">Copy my progress</button>'})+'</section>';
   return '<section class="sect-gap">'+panel({flat:1,tag:"h2",eyebrow:"Share with Claude",title:"Let Claude see your progress",
-    msg:"Your progress is saved privately in your claude.ai account. In any Claude chat, ask Claude to check it. It can read your stats and add custom lessons to the Learn tab.",
+    msg:"Your progress is saved privately in your claude.ai account. In any Claude chat, ask Claude to check it. It can read your stats and add custom lessons to the Coach tab.",
     body:'<pre class="promptbox" id="share-box" tabindex="0">'+esc(SHARE_PROMPT)+'</pre><p class="small muted" id="share-msg" role="status"></p>',
     foot:'<button type="button" class="btn ghost" id="share-copy" data-act="c-copy">Copy prompt</button>'})+'</section>';
 }
@@ -173,13 +180,13 @@ view.addEventListener("click",e=>{
     case "c-stop":if(ASK.ctl)ASK.ctl.abort();break;
     case "c-open":openCustomIntro(id);break;
     case "c-run":startCustom(id);break;
-    case "c-rm":{const y=scrollY;RM_ID=id;renderLearn();scrollTo(0,y);break}
-    case "c-rm-no":{const y=scrollY;RM_ID="";renderLearn();scrollTo(0,y);break}
-    case "c-rm-yes":RM_ID="";{const y=scrollY;coachRemove(id).then(()=>{if(UI.kind==="learn"){renderLearn();scrollTo(0,y)}});break}
+    case "c-rm":{const y=scrollY;RM_ID=id;renderCoach();scrollTo(0,y);break}
+    case "c-rm-no":{const y=scrollY;RM_ID="";renderCoach();scrollTo(0,y);break}
+    case "c-rm-yes":RM_ID="";{const y=scrollY;coachRemove(id).then(()=>{if(UI.kind==="coach"){renderCoach();scrollTo(0,y)}});break}
     case "c-copy":copyShare(b);break;
     case "p-copy":pasteCopy(b);break;
-    case "p-open":PASTE={open:true,text:"",msg:"",err:false};keepScroll(renderLearn);{const t=$("paste-in");if(t)t.focus({preventScroll:true})}break;
-    case "p-cancel":PASTE={open:false,text:"",msg:"",err:false};keepScroll(renderLearn);break;
+    case "p-open":PASTE={open:true,text:"",msg:"",err:false};keepScroll(renderCoach);{const t=$("paste-in");if(t)t.focus({preventScroll:true})}break;
+    case "p-cancel":PASTE={open:false,text:"",msg:"",err:false};keepScroll(renderCoach);break;
     case "p-add":pasteAdd();break;
   }
 });
@@ -215,7 +222,7 @@ async function weeklyRun(o){
   if(!SAMPLE||coachOff||WK.running||(!force&&!S.settings.weekly))return;
   const id=weekId();
   if((Array.isArray(COACH_RAW.lessons)?COACH_RAW.lessons:[]).some(l=>isObj(l)&&l.id===id)){
-    if(force){WK.msg="Done. Find it under From Claude on Learn.";syncWeeklyUI()}
+    if(force){WK.msg="Done. Find it in the Coach tab.";syncWeeklyUI()}
     return;
   }
   const today=dateKey();let tried="";
@@ -235,7 +242,7 @@ async function weeklyRun(o){
       const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter(l=>!(isObj(l)&&typeof l.id==="string"&&l.id.indexOf("weekly-")===0));
       ls.unshift(lesson);raw.lessons=ls.slice(0,20);raw.note={text:v.note,at:now};return raw;
     });
-    WK.msg="Done. Find it under From Claude on Learn.";
+    WK.msg="Done. Find it in the Coach tab.";
     toast({icon:'<span class="medal" style="--ac:var(--fg);width:36px;height:36px">'+aico("bolt",20)+'</span>',title:"This week's lesson is ready",sub:v.title});
   }catch(e){
     const code=e&&e.code;

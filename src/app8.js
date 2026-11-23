@@ -41,7 +41,7 @@ function sanitizeCoach(o){
   return out;
 }
 function loadCoach(){try{const raw=localStorage.getItem(COACH_LS);if(raw){COACH_RAW=JSON.parse(raw)||{};COACH=sanitizeCoach(COACH_RAW)}}catch(e){}}
-function rerenderCoach(){if((TAB==="learn"||TAB==="progress")&&(UI.kind==="learn"||UI.kind==="idle")&&!EX)renderTab()}
+function rerenderCoach(){if(TAB==="coach"&&UI.kind==="coach"&&!EX){const y=scrollY;renderTab();scrollTo(0,y)}}
 function applyCoachRaw(raw,quiet){
   COACH_RAW=isObj(raw)?raw:{};COACH=sanitizeCoach(COACH_RAW);
   try{localStorage.setItem(COACH_LS,JSON.stringify(COACH_RAW))}catch(e){}

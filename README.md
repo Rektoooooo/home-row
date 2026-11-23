@@ -10,7 +10,7 @@ A free touch-typing trainer that runs in the browser. Learn to type with all ten
 - **Rewards**: levels, a daily streak, 21 achievements and a weekly recap.
 - **Key sounds**: Soft, Creamy, Clicky and Typewriter, made in the browser with no audio files.
 - **Claude coach**: copy your progress into a Claude chat, get lessons written for your weakest keys, and paste the reply
-  back. The lessons appear in Learn.
+  back. The lessons appear in the Coach tab.
 
 Progress is saved in your browser. There is no account and no server.
 
