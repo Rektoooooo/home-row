@@ -137,26 +137,63 @@ p{margin:0;text-wrap:pretty}
 @media (min-width:901px) and (max-width:1100px){.fk.hide-t{display:none}}
 @media (max-width:760px){.fk{--s:calc(var(--s0)*.5)!important;left:var(--xm,var(--x));top:var(--ym,var(--y))}}
 
-/* ---------- demo window ---------- */
-.demo{margin:64px auto 0;width:min(980px,100%);text-align:left;border-radius:22px;background:var(--bg);border:1px solid var(--hair-2);box-shadow:0 50px 90px -40px rgba(50,35,120,.45),0 18px 40px -22px rgba(30,20,80,.25);overflow:hidden}
-.win-bar{display:grid;grid-template-columns:70px 1fr 70px;align-items:center;height:48px;padding:0 18px;background:linear-gradient(180deg,#F8F9FB,#EFF1F5);border-bottom:1px solid var(--line)}
-.lights{display:flex;gap:8px}.lights i{width:12px;height:12px;border-radius:50%;background:#FF5F57;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}.lights i:nth-child(2){background:#FEBC2E}.lights i:nth-child(3){background:#28C840}
-.win-title{text-align:center;font:600 14px/1 var(--font-display);color:var(--fg-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.win-body{padding:28px 28px 30px}
-.sheetp{background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:0 1px 0 #fff inset,0 2px 0 rgba(0,0,0,.03);padding:26px 30px 22px}
-.sheetp .ey{font:600 12px/1 var(--font-mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase}
-.tl{position:relative;margin:22px 0 22px;font:500 clamp(18px,3.1vw,34px)/1.4 var(--font-mono);white-space:pre;color:#8A93A3;min-height:1.4em}
-.tl .ch{color:#8A93A3;transition:color .1s}
-.tl .ch.done{color:var(--fg)}
-.tl .ch.err{color:var(--error);background:color-mix(in srgb,var(--error) 14%,transparent);border-radius:4px}
-.caret{position:absolute;left:0;top:.18em;width:2px;height:1.05em;border-radius:2px;background:var(--f-pinky);transition:transform .11s var(--ease);will-change:transform;animation:blink 1.1s steps(1) infinite}
-@keyframes blink{50%{opacity:.25}}
-.stats{display:flex;align-items:flex-end;gap:34px;padding-top:16px;border-top:1px solid var(--line)}
-.st b{display:block;font:600 clamp(18px,2.2vw,24px)/1 var(--font-mono);color:var(--fg);font-variant-numeric:tabular-nums}
-.st span{display:block;margin-top:6px;font:600 11.5px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
-.prog{margin-left:auto;align-self:center;width:min(220px,28%);height:6px;border-radius:99px;background:var(--sunken);overflow:hidden}.prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--f-pinky),var(--f-ring),var(--f-middle));transition:width .2s}
-.win-kb{margin:24px auto 0;max-width:720px}
-@media (max-width:760px){.win-body{padding:14px 12px 18px}.sheetp{padding:18px 16px 16px}.stats{gap:18px}.win-bar{grid-template-columns:54px 1fr 54px;padding:0 12px}.win-title{font-size:12.5px}.demo{margin-top:44px;border-radius:18px}.prog{display:none}.win-kb{margin-top:16px}}
+/* ---------- hero demo: a typing card over a real keyboard ---------- */
+.demo{position:relative;margin:68px auto 0;width:min(980px,100%);text-align:left}
+.tcard{position:relative;z-index:2;width:min(860px,100%);margin:0 auto;padding:20px 28px 18px;border-radius:22px;background:rgba(255,255,255,.84);-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,0 26px 50px -30px rgba(50,35,120,.42),0 8px 22px -14px rgba(30,20,80,.22)}
+.tc-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:30px}
+.tc-ey{font:600 12px/1 var(--font-mono);letter-spacing:.14em;color:var(--muted);text-transform:uppercase;white-space:nowrap}
+.fchip{--fc:var(--f-thumb);display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 13px 0 11px;border-radius:999px;white-space:nowrap;
+  background:color-mix(in srgb,var(--fc) 11%,#fff);color:color-mix(in srgb,var(--fc) 70%,#000);font:600 13.5px/1 var(--font-display);transition:background .2s,color .2s}
+.fchip i{width:8px;height:8px;border-radius:50%;background:var(--fc);box-shadow:0 0 0 3px color-mix(in srgb,var(--fc) 22%,transparent);transition:background .2s,box-shadow .2s}
+.fchip kbd{font:700 12px/1 var(--font-mono);padding:4px 6px;border-radius:6px;background:#fff;color:var(--fg);box-shadow:0 1px 0 color-mix(in srgb,var(--fc) 30%,#ccc)}
+.tview{position:relative;overflow:hidden;margin:16px 0 16px;padding:2px 0}
+.tview.shifted{-webkit-mask-image:linear-gradient(90deg,transparent,#000 48px);mask-image:linear-gradient(90deg,transparent,#000 48px)}
+.tline{position:relative;display:inline-block;white-space:pre;font:500 clamp(19px,2.55vw,30px)/1.5 var(--font-mono);letter-spacing:-.01em;transition:transform .3s var(--ease)}
+.tline.in{animation:linein .5s var(--ease)}
+@keyframes linein{from{opacity:0;transform:translateY(10px)}}
+.tline .c{color:#A6ADB9;border-radius:4px}
+.tline .c.ok{color:var(--fg)}
+.tline .c.bad{color:var(--error);background:color-mix(in srgb,var(--error) 12%,transparent);box-shadow:inset 0 -2px 0 var(--error)}
+.tcaret{position:absolute;left:0;top:.2em;width:2.5px;height:1.1em;border-radius:2px;background:var(--f-pinky);box-shadow:0 0 10px color-mix(in srgb,var(--f-pinky) 55%,transparent);transition:transform 80ms ease-out}
+.demo:not(.typing) .tcaret{animation:blink 1.05s steps(1) infinite}
+@keyframes blink{50%{opacity:.2}}
+.stats{display:flex;align-items:flex-end;gap:32px;padding-top:14px;border-top:1px solid var(--hair-2)}
+.st b{display:block;font:600 clamp(18px,2vw,22px)/1 var(--font-mono);color:var(--fg);font-variant-numeric:tabular-nums}
+.st span{display:block;margin-top:6px;font:600 11px/1 var(--font-mono);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.prog{margin-left:auto;align-self:center;width:min(200px,26%);height:6px;border-radius:99px;background:rgba(21,24,29,.08);overflow:hidden}
+.prog i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--f-pinky),var(--f-ring),var(--f-middle));transition:width .2s}
+
+/* the keyboard: dark deck, cream keycaps, amber home bumps (same as the logo) */
+.deck{position:relative;z-index:1;width:min(940px,100%);margin:26px auto 0;container-type:inline-size}
+.deck::after{content:"";position:absolute;left:8%;right:8%;bottom:-34px;height:48px;z-index:-1;border-radius:50%;background:radial-gradient(closest-side,rgba(45,30,110,.38),transparent);filter:blur(10px)}
+.plate{--u:calc(94cqw/15);padding:3cqw 3cqw 3.3cqw;border-radius:3.4cqw;
+  background:radial-gradient(110% 80% at 50% -20%,rgba(122,104,220,.35),transparent 60%),linear-gradient(180deg,#2A3046,#0F121C);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 0 0 1px rgba(255,255,255,.05),inset 0 -4px 0 rgba(0,0,0,.45),0 50px 80px -40px rgba(25,16,80,.6),0 18px 36px -22px rgba(25,16,80,.55)}
+.krow{display:grid;grid-template-columns:repeat(60,minmax(0,1fr));height:var(--u)}
+.key{--fc:var(--f-thumb);--e:calc(var(--u)*.08);--ec:#B5AD9C;--m:calc(var(--u)*.045);grid-column:span var(--w,4);position:relative;margin:var(--m) var(--m) calc(var(--m) + var(--e));border-radius:calc(var(--u)*.17);color:#1B1F2B;
+  background:radial-gradient(80% 65% at 50% 38%,rgba(255,255,255,.7),transparent 70%),linear-gradient(180deg,#FFFFFF,#E7E1D4);
+  box-shadow:0 var(--e) 0 var(--ec),0 calc(var(--e) + var(--u)*.05) calc(var(--u)*.14) rgba(0,0,0,.55),inset 0 1px 0 #fff,inset 0 calc(var(--u)*-.035) calc(var(--u)*.07) rgba(110,90,60,.14);
+  transition:transform 55ms ease-out,box-shadow 55ms ease-out}
+.key[data-f=p]{--fc:var(--f-pinky)}.key[data-f=r]{--fc:var(--f-ring)}.key[data-f=m]{--fc:var(--f-middle)}.key[data-f=i]{--fc:var(--f-index)}
+.key .lg{position:absolute;inset:0;display:grid;place-items:center;font:700 calc(var(--u)*.33)/1 var(--font-display);transform:translateY(-3%)}
+.key.dual .lg{grid-template-rows:1fr 1fr;align-content:center;gap:calc(var(--u)*.04);padding:20% 0;font:600 calc(var(--u)*.21)/1 var(--font-display)}
+.key.dual .lg i{font-style:normal}
+.key.dual .lg i:first-child{color:#7B7F8C}
+.key.mod{--ec:#9C9483;background:radial-gradient(80% 65% at 50% 38%,rgba(255,255,255,.35),transparent 70%),linear-gradient(180deg,#E6E0D5,#CCC4B5)}
+.key.mod .lg{place-items:end start;padding:0 0 calc(var(--u)*.16) calc(var(--u)*.17);font:700 calc(var(--u)*.17)/1 var(--font-body);color:#4A4E5B;letter-spacing:.02em}
+.key.sym .lg{place-items:center;padding:0;font:600 calc(var(--u)*.27)/1 var(--font-body)}
+.key.acc{--ec:#B26C0A;background:radial-gradient(80% 65% at 50% 38%,rgba(255,255,255,.45),transparent 70%),linear-gradient(180deg,#FFC764,#F09A1A)}
+.key.acc .lg{color:#3A2504}
+.key.hm::after{content:"";position:absolute;left:38%;right:38%;bottom:15%;height:calc(var(--u)*.055);border-radius:99px;background:var(--bump);box-shadow:0 0 calc(var(--u)*.1) rgba(245,165,36,.85)}
+.key.next{--ec:color-mix(in srgb,var(--fc) 55%,#000);color:#fff;background:radial-gradient(80% 65% at 50% 30%,rgba(255,255,255,.4),transparent 70%),linear-gradient(180deg,color-mix(in srgb,var(--fc) 58%,#fff),var(--fc));
+  box-shadow:0 var(--e) 0 var(--ec),0 0 calc(var(--u)*.6) color-mix(in srgb,var(--fc) 80%,transparent),inset 0 1px 0 rgba(255,255,255,.55)}
+.key.next .lg,.key.next .lg i:first-child{color:#fff}
+.key.down{transform:translateY(calc(var(--e)*.85));box-shadow:0 calc(var(--e)*.15) 0 var(--ec),0 calc(var(--u)*.02) calc(var(--u)*.05) rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.6)}
+.key.next.down{box-shadow:0 calc(var(--e)*.15) 0 var(--ec),0 0 calc(var(--u)*.45) color-mix(in srgb,var(--fc) 70%,transparent),inset 0 1px 0 rgba(255,255,255,.5)}
+.key.bad{--ec:#8F1233;color:#fff;background:linear-gradient(180deg,#FF8DA6,var(--error))}
+.key.bad .lg{color:#fff}
+@container (max-width:560px){.key.mod:not(.sym) .lg{font-size:0}.key.dual .lg i:first-child{display:none}.key.dual .lg{font-size:calc(var(--u)*.3);grid-template-rows:1fr;padding:0}}
+@media (max-width:760px){.demo{margin-top:44px}.tcard{padding:14px 16px 14px;border-radius:18px}.tc-ey{font-size:10.5px;letter-spacing:.1em}.fchip{height:26px;font-size:12px;padding:0 10px 0 9px}.fchip .w{display:none}.tview{margin:12px 0}.stats{gap:20px;padding-top:12px}.prog{display:none}.deck{margin-top:16px}}
 
 /* ---------- mini keyboard ---------- */
 .kb{container-type:inline-size;width:100%}
@@ -392,21 +429,21 @@ footer{border-top:1px dashed var(--hair-2)}
     <a class="btn lg quiet" href="#features">See how it works</a>
   </div>
 
-  <div class="demo rv" style="--dl:.32s" id="demo" role="img" aria-label="Animated preview of the Home Row trainer: a sentence types itself while the next key lights up on a keyboard">
-    <div class="win-bar"><div class="lights" aria-hidden="true"><i></i><i></i><i></i></div><div class="win-title">Home Row · Lesson 7 · E and I</div><div></div></div>
-    <div class="win-body">
-      <div class="sheetp">
-        <div class="ey">Lesson 7 · step <span id="dStep">1</span> of 4</div>
-        <div class="tl" id="dLine"><span class="caret" id="dCaret"></span><span id="dText"></span></div>
-        <div class="stats">
-          <div class="st"><b id="dWpm">0</b><span>WPM</span></div>
-          <div class="st"><b id="dAcc">100%</b><span>Accuracy</span></div>
-          <div class="st"><b id="dCnt">0</b><span>Typed</span></div>
-          <div class="prog"><i id="dProg"></i></div>
-        </div>
+  <div class="demo rv" style="--dl:.32s" id="demo" role="img" aria-label="Animated preview of Home Row: a sentence is typed at a natural pace, with a few mistakes that get fixed with backspace, while the keys light up on a keyboard">
+    <div class="tcard" aria-hidden="true">
+      <div class="tc-top">
+        <div class="tc-ey">Real text · <span id="dStep">1</span> of 4</div>
+        <div class="fchip" id="dChip"><i></i><kbd id="dKey">E</kbd><span><span id="dFin">Left middle</span><span class="w"> finger</span></span></div>
       </div>
-      <div class="win-kb"><div class="kb" id="dKb"></div></div>
+      <div class="tview" id="dView"><div class="tline" id="dLine"><span class="tcaret" id="dCaret"></span><span id="dText"></span></div></div>
+      <div class="stats">
+        <div class="st"><b id="dWpm">–</b><span>WPM</span></div>
+        <div class="st"><b id="dAcc">100%</b><span>Accuracy</span></div>
+        <div class="st"><b id="dCnt">0</b><span>Typed</span></div>
+        <div class="prog"><i id="dProg"></i></div>
+      </div>
     </div>
+    <div class="deck" aria-hidden="true"><div class="plate" id="dKb"></div></div>
   </div>
 </section>
 
@@ -629,66 +666,150 @@ const ORDER="fjdksla;ghruewioqptyvmc,x.z/bn".split("");
 function kbHTML(){
   return KROWS.map((r,ri)=>'<div class="kr" style="--o:'+ri+'">'+[...r].map(c=>'<span class="k'+("fj".includes(c)?" hm":"")+'" data-k="'+c+'" data-f="'+FMAP[c]+'" style="--i:'+ORDER.indexOf(c)+'">'+c+'</span>').join("")+'</div>').join("")+'<div class="kr" style="--o:5"><span class="k sp" data-k=" " data-f="t"></span></div>';
 }
-$("dKb").innerHTML=kbHTML();
 $("kbCourse").innerHTML=kbHTML();
-const keyEl={};document.querySelectorAll("#dKb .k").forEach(k=>keyEl[k.dataset.k]=k);
 
-/* ---------- live typing demo ---------- */
-const PH=["see the tide rise","he tried the red tile","life is like the line","she fixed the fire"];
-const NEAR={e:"r",i:"o",t:"r",h:"j",d:"s",l:"k",s:"a",r:"e",a:"s",f:"d",n:"m",o:"i",k:"l",w:"e"};
-const dText=$("dText"),dCaret=$("dCaret"),dLine=$("dLine"),dWpm=$("dWpm"),dAcc=$("dAcc"),dCnt=$("dCnt"),dProg=$("dProg"),dStep=$("dStep"),demo=$("demo");
-let pi=0,ci=0,typed=0,okN=0,errN=0,t0=0,vis=false,running=false,spans=[],errAt=-1,errDone=false,timer=0;
-function build(){
-  dText.innerHTML=[...PH[pi]].map(c=>'<span class="ch">'+(c===" "?"&nbsp;":c)+'</span>').join("");
-  spans=[...dText.children];ci=0;errDone=false;
-  errAt=(pi%2===1)?2+Math.floor(Math.random()*(PH[pi].length-5)):(Math.random()<.35?3+Math.floor(Math.random()*6):-1);
-  if(errAt>=0&&PH[pi][errAt]===" ")errAt++;
-  dStep.textContent=pi+1;dProg.style.width="0%";place();light();
+/* ---------- hero demo: a person typing, mistakes and all ---------- */
+const SENT=["Eyes on the screen, not on your hands.","Slow is smooth, and smooth becomes fast.","Learn one key at a time, then the next.","Your fingers already know the way home."];
+const KF={};
+[["p","`1qaz0p;/-=[]\\'"],["r","2wsx9ol."],["m","3edc8ik,"],["i","45rtfgvb67yuhjnm"]].forEach(([f,s])=>[...s].forEach(c=>KF[c]=f));
+const LEFT=new Set([..."`12345qwertasdfgzxcvb"]);
+const SHIFTED={"1":"!","2":"@","3":"#","4":"$","5":"%","6":"^","7":"&","8":"*","9":"(","0":")","-":"_","=":"+","[":"{","]":"}","\\":"|",";":":","'":"\"",",":"<",".":">","/":"?"};
+const FNAME={p:"pinky",r:"ring",m:"middle",i:"index",t:"thumb"};
+const NEAR={a:"s",b:"v",c:"x",d:"s",e:"r",f:"g",g:"f",h:"j",i:"o",j:"h",k:"l",l:"k",m:"n",n:"m",o:"i",p:"o",q:"w",r:"e",s:"a",t:"r",u:"y",v:"c",w:"e",x:"c",y:"u",z:"x"};
+const DROWS=[
+  [["esc",4,"mod acc","esc","p"],..."1234567890-=",["delete",8,"mod","bk","p"]],
+  [["tab",6,"mod","tab","p"],..."qwertyuiop[]",["\\",6,"dual","\\","p"]],
+  [["caps",7,"mod","caps","p"],..."asdfghjkl;'",["return",9,"mod","ret","p"]],
+  [["shift",9,"mod","shl","p"],..."zxcvbnm,./",["shift",11,"mod","shr","p"]],
+  [["⌃",5,"mod sym","c1","t"],["⌥",5,"mod sym","o1","t"],["⌘",6,"mod sym","m1","t"],["",28,"space","space","t"],["⌘",6,"mod sym","m2","t"],["⌥",5,"mod sym","o2","t"],["⌃",5,"mod sym","c2","t"]]
+];
+const escH=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function keyHTML(x){
+  let l,w=4,c="",id,f;
+  if(typeof x==="string"){id=x;f=KF[x]||"p";c=/[a-z]/.test(x)?"":"dual";l=x}else[l,w,c,id,f]=x;
+  const lg=c.includes("dual")?"<i>"+escH(SHIFTED[l])+"</i><i>"+escH(l)+"</i>":/[a-z]/.test(l)&&l.length===1?l.toUpperCase():escH(l);
+  return '<span class="key '+c+("fj".includes(id)&&id.length===1?" hm":"")+'" data-id="'+escH(id)+'" data-f="'+f+'" style="--w:'+w+'"><span class="lg">'+lg+"</span></span>";
+}
+$("dKb").innerHTML=DROWS.map(r=>'<div class="krow">'+r.map(keyHTML).join("")+"</div>").join("");
+const kEl={};document.querySelectorAll("#dKb .key").forEach(k=>kEl[k.dataset.id]=k);
+
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const gauss=()=>{let u=0,v=0;while(!u)u=Math.random();while(!v)v=Math.random();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v)};
+const handOf=c=>c===" "?"T":LEFT.has(c.toLowerCase())?"L":"R";
+/* the pause before a key, in ms: hand alternation is quick, the same finger twice is slow, capitals need shift */
+function gap(prev,c){
+  let b;
+  if(c===" ")b=100;
+  else if(prev==null)b=210;
+  else if(prev===" ")b=165;
+  else{const a=prev.toLowerCase(),z=c.toLowerCase();b=a===z?130:handOf(prev)!==handOf(c)?106:KF[a]===KF[z]?205:140}
+  if(c!==c.toLowerCase())b+=120;
+  if(",.".includes(c))b+=60;
+  if(prev===" "&&Math.random()<.13)b+=rnd(180,480); // reading ahead
+  return Math.min(950,Math.max(60,b*1.14*Math.exp(gauss()*.24)));
+}
+/* a list of keystrokes for one sentence: {d: wait before it, k: "t" type | "b" backspace, ch} */
+function plan(s,mistakes){
+  const cand=[];for(let i=6;i<s.length-3;i++)if(/[a-z]/.test(s[i])&&/[a-z]/.test(s[i-1]))cand.push(i);
+  const errs=new Map();
+  for(let n=0;n<mistakes&&cand.length;n++){
+    const i=cand[Math.floor(Math.random()*cand.length)];
+    if(![...errs.keys()].some(j=>Math.abs(j-i)<10))errs.set(i,["near","near","late","swap","double"][Math.floor(Math.random()*5)]);
+  }
+  const A=[];let prev=null,i=0;
+  const type=ch=>{A.push({d:gap(prev,ch),k:"t",ch});prev=ch};
+  const back=n=>{A.push({d:rnd(260,480),k:"b"});for(let j=1;j<n;j++)A.push({d:rnd(80,120),k:"b"});prev=null};
+  while(i<s.length){
+    const c=s[i];let kind=errs.get(i);
+    if(kind){
+      errs.delete(i);
+      if(kind==="swap"&&!/[a-z]/.test(s[i+1]||"")||s[i+1]===c)kind="near";
+      if(kind==="swap"){type(s[i+1]);type(c);let n=2;if(Math.random()<.5&&s[i+2]){type(s[i+2]);n++}back(n)}
+      else if(kind==="double"){type(c);type(c);back(1);i++}
+      else{type(NEAR[c]||"x");let n=1;const more=kind==="late"?2+Math.floor(Math.random()*2):Math.random()<.5?1:0;
+        for(let j=1;j<=more&&i+j<s.length;j++){type(s[i+j]);n++}back(n)}
+      continue;
+    }
+    type(c);i++;
+  }
+  return A;
+}
+function keysFor(ch){
+  if(ch===" ")return["space"];
+  const lo=ch.toLowerCase();
+  if(kEl[lo])return lo===ch?[lo]:[lo,LEFT.has(lo)?"shr":"shl"];
+  for(const b in SHIFTED)if(SHIFTED[b]===ch)return[b,LEFT.has(b)?"shr":"shl"];
+  return[];
+}
+function press(ids,ok){
+  const [main,sh]=ids.map(id=>kEl[id]),hold=rnd(70,115);
+  if(sh){sh.classList.add("down");setTimeout(()=>sh.classList.remove("down"),hold+70)}
+  if(!main)return;
+  main.classList.add("down");if(!ok)main.classList.add("bad");
+  setTimeout(()=>main.classList.remove("down"),hold);
+  if(!ok)setTimeout(()=>main.classList.remove("bad"),300);
+}
+const dText=$("dText"),dCaret=$("dCaret"),dLine=$("dLine"),dView=$("dView"),dWpm=$("dWpm"),dAcc=$("dAcc"),dCnt=$("dCnt"),dProg=$("dProg"),dStep=$("dStep"),dChip=$("dChip"),dKey=$("dKey"),dFin=$("dFin"),demo=$("demo");
+let si=0,s="",acts=[],ai=0,buf=[],spans=[],timer=0,idle=0,running=false,vis=false,okN=0,badN=0,keyN=0,doneChars=0,active=0;
+function begin(fresh){
+  s=SENT[si];acts=plan(s,si===0?1:Math.random()<.6?1:0);ai=0;buf=[];
+  dText.innerHTML=[...s].map(()=>'<span class="c"></span>').join("");spans=[...dText.children];
+  dStep.textContent=si+1;render();
+  if(fresh){dLine.classList.remove("in");void dLine.offsetWidth;dLine.classList.add("in")}
+}
+function render(){
+  let good=0;
+  for(let p=0;p<s.length;p++){
+    const el=spans[p];let cls="c",tx=s[p];
+    if(p<buf.length){if(buf[p]===s[p]){cls="c ok";good++}else{cls="c bad";tx=buf[p]===" "?"·":buf[p]}}
+    if(el.className!==cls)el.className=cls;if(el.textContent!==tx)el.textContent=tx;
+  }
+  place();
+  // the next key: backspace while a mistake is on screen, else the next character
+  const wrong=buf.some((w,p)=>w!==s[p]),c=s[buf.length],ids=wrong?["bk"]:c==null?[]:keysFor(c);
+  document.querySelectorAll("#dKb .key.next").forEach(k=>{if(!ids.includes(k.dataset.id))k.classList.remove("next")});
+  ids.forEach(id=>kEl[id]&&kEl[id].classList.add("next"));
+  const f=wrong?"p":c==null?"":c===" "?"t":KF[c.toLowerCase()]||"p";
+  dChip.style.setProperty("--fc",f?"var(--f-"+{p:"pinky",r:"ring",m:"middle",i:"index",t:"thumb"}[f]+")":"var(--ok)");
+  dKey.textContent=wrong?"delete":c==null?"✓":c===" "?"space":c!==c.toLowerCase()?"⇧ "+c:c.toUpperCase();
+  dFin.textContent=c==null&&!wrong?"Clean":f==="t"?"Right thumb":(wrong?"Right":handOf(c)==="L"?"Left":"Right")+" "+FNAME[f];
+  dChip.querySelector(".w").hidden=(c==null&&!wrong)||f==="t";
+  // stats
+  const mins=active/60000;
+  dWpm.textContent=active>2500?Math.round((doneChars+good)/5/mins):"–";
+  dAcc.textContent=(okN+badN?Math.round(okN/(okN+badN)*100):100)+"%";
+  dCnt.textContent=keyN;
+  dProg.style.width=Math.round(good/s.length*100)+"%";
 }
 function place(){
-  const s=spans[ci],x=s?s.offsetLeft:(spans.length?spans[spans.length-1].offsetLeft+spans[spans.length-1].offsetWidth:0);
+  const n=buf.length,last=spans[spans.length-1],x=n<spans.length?spans[n].offsetLeft:last.offsetLeft+last.offsetWidth;
   dCaret.style.transform="translateX("+x+"px)";
+  const W=dView.clientWidth,shift=Math.max(0,Math.min(x-W*.62,dLine.offsetWidth-W+6));
+  dLine.style.transform=shift>0?"translateX("+(-shift)+"px)":"";dView.classList.toggle("shifted",shift>0);
 }
-function light(){
-  document.querySelectorAll("#dKb .k.next").forEach(k=>k.classList.remove("next"));
-  const c=PH[pi][ci];if(c!==undefined&&keyEl[c])keyEl[c].classList.add("next");
+function act(a){
+  if(a.k==="t"){buf.push(a.ch);keyN++;const ok=a.ch===s[buf.length-1];ok?okN++:badN++;press(keysFor(a.ch),ok)}
+  else{buf.pop();press(["bk"],true)}
+  demo.classList.add("typing");clearTimeout(idle);idle=setTimeout(()=>demo.classList.remove("typing"),650);
+  render();
 }
-function stats(){
-  const el=Math.max(3000,performance.now()-t0);
-  dWpm.textContent=t0?Math.round(okN/5/(el/60000)):0;
-  dAcc.textContent=(okN+errN?Math.round(okN/(okN+errN)*100):100)+"%";
-  dCnt.textContent=typed;
-}
-function flash(k,cls){if(!k)return;k.classList.add(cls);setTimeout(()=>k.classList.remove(cls),cls==="bad"?260:110)}
-function schedule(ms){clearTimeout(timer);timer=setTimeout(step,ms)}
-function step(){
-  if(!vis){running=false;return}
-  if(!t0)t0=performance.now();
-  const ph=PH[pi];
-  if(ci>=ph.length){ // phrase done: pause, then next
-    setTimeout(()=>{if(!vis){running=false;return}pi=(pi+1)%PH.length;build();schedule(450)},900);return;
+function loop(){
+  if(!vis||document.hidden){running=false;return}
+  running=true;
+  if(ai>=acts.length){ // sentence finished: a breath, then the next one
+    timer=setTimeout(()=>{if(!vis||document.hidden){running=false;return}doneChars+=s.length;si=(si+1)%SENT.length;begin(true);loop()},1500);return;
   }
-  const c=ph[ci];
-  if(ci===errAt&&!errDone){ // a mistake that gets fixed
-    errDone=true;const w=NEAR[c]||"x";
-    spans[ci].textContent=w;spans[ci].classList.add("err");flash(keyEl[w],"bad");errN++;typed++;stats();
-    schedule(340);
-    const fix=setTimeout(()=>{spans[ci].textContent=c===" "?" ":c;spans[ci].classList.remove("err")},300);
-    return;
-  }
-  spans[ci].classList.add("done");flash(keyEl[c],"hit");okN++;typed++;ci++;
-  dProg.style.width=Math.round(ci/ph.length*100)+"%";
-  place();light();stats();
-  schedule(c===" "?150+Math.random()*60:105+Math.random()*95);
+  const a=acts[ai];
+  timer=setTimeout(()=>{if(!vis||document.hidden){running=false;return}if(ai>0)active+=a.d;act(a);ai++;loop()},a.d);
 }
 function still(){ // reduced motion: one calm frame
-  pi=0;build();for(let i=0;i<9;i++)spans[i].classList.add("done");ci=9;place();light();
-  dProg.style.width="50%";dWpm.textContent="52";dAcc.textContent="100%";dCnt.textContent="9";
+  si=0;begin(false);buf=[...s.slice(0,15)];okN=keyN=15;active=0;render();dWpm.textContent="62";
 }
-build();
+begin(false);
 if(REDUCED){still()}
 else{
-  new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!running){running=true;schedule(500)}},{threshold:.25}).observe(demo);
+  new IntersectionObserver(es=>{vis=es[0].isIntersecting;if(vis&&!running)loop()},{threshold:.2}).observe(demo);
+  document.addEventListener("visibilitychange",()=>{if(!document.hidden&&vis&&!running)loop()});
   document.fonts&&document.fonts.ready.then(place);
 }
 addEventListener("resize",place);
