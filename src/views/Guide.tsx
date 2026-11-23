@@ -1,5 +1,6 @@
 /* GUIDE: the article, carried over verbatim from legacy/src/app4.js renderGuide. */
 import { Keyboard } from "@/components/Keyboard";
+import { Screen } from "@/lib/screen";
 import { GCOL } from "@/core/data";
 import "@/styles/panels.css";
 
@@ -18,7 +19,8 @@ const List = ({ items }: { items: string[] }) => <ul>{items.map((x, i) => <li ke
 
 export function GuideView() {
   return (
-    <div className="view-in">
+    <div>
+      <Screen kind="guide" />
       <article className="guide"><h1>Guide</h1><p className="muted">Everything you need to know before and while you learn.</p>
         <h2>1. Sit and place your hands</h2>
         <List items={["Sit back with your feet flat and your shoulders relaxed. Keep your elbows close to your body.", "Keep your wrists straight, in line with your forearms. Let your hands hover over the keys instead of resting on the edge of the laptop while you type.", "Put the top of the screen at or just below eye level, about an arm's length away.", "Take short breaks often."]} />

@@ -2,6 +2,7 @@
    Ported from legacy/src/app5b.js (renderProgress) and app10.js (levelHeroHTML, recapHTML, achHTML). */
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp } from "lucide-react";
+import { Screen } from "@/lib/screen";
 import { Btn, Cap, Pstat, Stars } from "@/components/parts";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -154,7 +155,8 @@ function Saving() {
 export function ProgressView() {
   useProgress();
   return (
-    <div className="view-in">
+    <div>
+      <Screen kind="progress" />
       <div className="view-head"><h1>Progress</h1></div>
       <Card className="lvl-card"><LevelRow big /></Card>
       <Recap />

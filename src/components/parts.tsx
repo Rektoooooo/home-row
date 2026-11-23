@@ -39,9 +39,9 @@ export function Panel({ eyebrow, title, status, msg, stats, statsCls, children, 
   );
 }
 
-export function StatusChip({ ok }: { ok: boolean }) {
+export function StatusChip({ ok, label }: { ok: boolean; label?: string }) {
   return ok
-    ? <Badge variant="secondary" className="status ok h-auto gap-1.5 px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-fg"><Check size={14} strokeWidth={2} className="text-ok" aria-hidden="true" />Passed</Badge>
+    ? <Badge variant="secondary" className="status ok h-auto gap-1.5 px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-fg"><Check size={14} strokeWidth={2} className="text-ok" aria-hidden="true" />{label ?? "Passed"}</Badge>
     : <Badge variant="outline" className="status bad h-auto gap-1.5 border-0 bg-transparent px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-error shadow-[inset_0_0_0_1.5px_var(--error)]"><CircleAlert size={14} strokeWidth={2} aria-hidden="true" />Not passed yet</Badge>;
 }
 

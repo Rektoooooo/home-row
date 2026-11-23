@@ -52,9 +52,9 @@ export function drawKey(c?:any,x?:any,y?:any,s?:any,ch?:any,ang?:any,disp?:any){
   c.restore();
 }
 /* o={kind:"test"|"week", big, unit, items:[[label,value]], tag}. One premium dark look in every theme. */
-export async function drawShareCard(o?:any){
+export async function drawShareCard(o?:any,quick?:boolean){
   const cs=getComputedStyle(document.documentElement),disp=cs.getPropertyValue("--font-display").trim(),mono=cs.getPropertyValue("--font-mono").trim();
-  try{await document.fonts.ready;await Promise.all(["800 250px ","800 86px ","700 34px ","700 30px ","700 52px "].map(f=>document.fonts.load(f+disp)).concat(["600 18px ","600 15px "].map(f=>document.fonts.load(f+mono))))}catch(e){}
+  if(!quick)try{await document.fonts.ready;await Promise.all(["800 250px ","800 86px ","700 34px ","700 30px ","700 52px "].map(f=>document.fonts.load(f+disp)).concat(["600 18px ","600 15px "].map(f=>document.fonts.load(f+mono))))}catch(e){}
   const cv=document.createElement("canvas");cv.width=SW;cv.height=SH;const c:any=cv.getContext("2d"),M=72;
   const ls=(px?:any)=>{if("letterSpacing" in c)c.letterSpacing=px+"px"};
   /* background: deep indigo, finger-colour glows, a faint dot grid */

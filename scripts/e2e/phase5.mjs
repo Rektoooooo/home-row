@@ -326,6 +326,52 @@ if (!SHOTS) {
     ok(await page.locator(".welcome").count() === 1 && Object.keys((await stored(page))?.lessons || {}).length === 0, "Esc = Not now: nothing moved, a fresh user gets the welcome");
     await ctx.close();
   }
+
+  /* ---------- 5. reduced motion: dialogs, toasts and the welcome still open and close; sound re-click; toast queue ---------- */
+  {
+    const { ctx, page, errors } = await fresh({ motion: "reduce" });
+    ok(await page.evaluate(() => getComputedStyle(document.querySelector("#root *")).transitionDuration) === "0s", "reduced motion: transitions are off app-wide");
+    ok(await page.locator(".welcome").count() === 1, "reduced motion: the welcome opens");
+    await page.getByRole("button", { name: "Skip" }).click(); await page.waitForTimeout(400);
+    ok(await page.locator(".welcome").count() === 0, "reduced motion: the welcome closes (Skip)");
+    await page.click("#open-settings"); await page.waitForSelector('[role=dialog][data-state=open]');
+    await page.keyboard.press("Escape"); await page.waitForSelector('[role=dialog]', { state: "detached", timeout: 2000 }).then(() => ok(true, "reduced motion: the settings dialog closes"), () => ok(false, "reduced motion: the settings dialog closes"));
+    await page.evaluate(() => window.__hr.toast({ title: "Reduced motion toast" }));
+    ok(await page.locator("[data-sonner-toast]").filter({ hasText: "Reduced motion toast" }).count() === 1, "reduced motion: a toast shows");
+    await page.waitForTimeout(5200);
+    ok(await page.locator("[data-sonner-toast]").count() === 0, "reduced motion: the toast leaves after 4.5 s");
+    noErrors(errors, "(reduced motion)"); await ctx.close();
+  }
+  {
+    /* clicking the selected key sound replays its preview, only there; the other segmented controls keep their value silently */
+    const { ctx, page } = await fresh({ init: seedInit, arg: SEEDED(3) });
+    await page.evaluate(() => { window.__starts = 0; const p = AudioBufferSourceNode.prototype.start; AudioBufferSourceNode.prototype.start = function (...a) { window.__starts++; return p.apply(this, a); }; });
+    await open(page);
+    await radio(page, "Key sound", "Clicky").click(); await page.waitForTimeout(1200);
+    const n1 = await page.evaluate(() => window.__starts); await radio(page, "Key sound", "Clicky").click(); await page.waitForTimeout(300);
+    ok(await page.evaluate(() => window.__starts) > n1 && await checked(page, "Key sound", "Clicky"), "re-clicking the selected key sound replays its preview and keeps it selected");
+    await page.waitForTimeout(1200);
+    const n2 = await page.evaluate(() => window.__starts); await radio(page, "Daily goal", "15 min").click(); await radio(page, "Daily goal", "15 min").click(); await page.waitForTimeout(300);
+    ok(await page.evaluate(() => window.__starts) === n2 && await checked(page, "Daily goal", "15 min") && (await stored(page)).settings.goal === 15, "re-clicking another segmented control keeps its value, no side effects");
+    await ctx.close();
+  }
+  {
+    /* toasts: at most 3 at once, the rest queue and each gets its full 4.5 s */
+    const { ctx, page } = await fresh({ motion: "no-preference", init: seedInit, arg: SEEDED(3) });
+    await page.evaluate(() => { for (let i = 1; i <= 5; i++) window.__hr.toast({ title: "Queued " + i }); });
+    await page.waitForTimeout(400);
+    const titles = () => page.locator("[data-sonner-toast]").evaluateAll((e) => e.map((x) => x.textContent).sort());
+    let t = await titles();
+    ok(t.length === 3 && t.every((x) => /Queued [123]/.test(x)), "five toasts: three show, two wait: " + t.join(","));
+    await page.waitForTimeout(4400);
+    t = await titles();
+    ok(t.length === 2 && t.every((x) => /Queued [45]/.test(x)), "the queued two show once the first three are gone: " + t.join(","));
+    await page.waitForTimeout(4200);
+    ok(await page.locator("[data-sonner-toast]").filter({ hasText: /Queued [45]/ }).count() === 2, "a queued toast still has its full 4.5 s (shown 4.2 s ago)");
+    await page.waitForTimeout(1200);
+    ok(await page.locator("[data-sonner-toast]").count() === 0, "all toasts are gone in the end");
+    await ctx.close();
+  }
 }
 
 

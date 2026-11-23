@@ -155,6 +155,21 @@ if (process.env.SHOTS !== "0") {
     }
   }
 }
+// 6. the trainer sets .dark before any script of the app runs (no light flash for dark users)
+{
+  const t = async (scheme, saved, want, msg) => {
+    const ctx = await b.newContext({ colorScheme: scheme });
+    const page = await ctx.newPage();
+    await page.route(/\/assets\/.*\.js$/, (r) => r.abort());
+    if (saved) await page.addInitScript((v) => localStorage.setItem("homerow.theme", v), saved);
+    await page.goto(URL_ + "app/", { waitUntil: "load" });
+    ok((await page.evaluate(() => document.documentElement.classList.contains("dark"))) === want, "theme guard (app JS blocked): " + msg);
+    await ctx.close();
+  };
+  await t("dark", null, true, "system dark -> dark"); await t("light", null, false, "system light -> light");
+  await t("light", "dark", true, "saved dark beats system light"); await t("dark", "light", false, "saved light beats system dark");
+}
+
 await b.close();
 console.log(fails ? `${fails} FAILED` : "ALL PASS");
 process.exit(fails ? 1 : 0);

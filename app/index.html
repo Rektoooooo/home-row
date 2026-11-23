@@ -6,6 +6,10 @@
 <title>Home Row</title>
 <meta name="description" content="Learn to type with all ten fingers. Short daily lessons that adapt to you, right in your browser.">
 <meta name="theme-color" content="#0E1220">
+<script>/* sets .dark before the first paint, from the same sources as src/lib/theme.ts: the saved choice, else the host's data-theme, else the system */
+(function(){try{var r=document.documentElement,p=null;try{p=localStorage.getItem("homerow.theme")}catch(e){}
+var t=p==="light"||p==="dark"?p:r.getAttribute("data-theme"),d=t==="dark"||(t!=="light"&&matchMedia("(prefers-color-scheme: dark)").matches);
+r.classList.toggle("dark",d);r.style.colorScheme=d?"dark":"light"}catch(e){}})();</script>
 <link rel="icon" type="image/svg+xml" href="/assets/icon.svg">
 <link rel="apple-touch-icon" href="/assets/apple-touch-icon.png">
 <meta property="og:title" content="Home Row · Practice">

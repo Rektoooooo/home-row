@@ -18,6 +18,7 @@ import { useEscape } from "@/lib/escape";
 import { navigate, takePending } from "@/lib/route";
 import { reduceMotion } from "@/ui/engine";
 import { countUp } from "@/ui/countup";
+import { Screen } from "@/lib/screen";
 import { cn } from "@/lib/utils";
 import { SessionFlow } from "@/views/Session";
 
@@ -217,10 +218,10 @@ export function LessonFlow({ n0, session, onExit }: { n0: number; session?: Less
       focus: [...ctx(rn.n).all], onFinish: stepDone, onBack: () => navigate("learn"),
     }} /></>;
   }
-  if (screen.k === "intro") return <div key={"intro" + screen.n} className="view-in">{bar}<Intro n={screen.n} onBack={onExit} onStart={() => startLesson(screen.n)} /></div>;
-  if (screen.k === "summary") return <div key={"sum" + screen.s} className="view-in">{bar}<StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={onExit} /></div>;
+  if (screen.k === "intro") return <div key={"intro" + screen.n}><Screen kind="intro" />{bar}<Intro n={screen.n} onBack={onExit} onStart={() => startLesson(screen.n)} /></div>;
+  if (screen.k === "summary") return <div key={"sum" + screen.s}><Screen kind="summary" />{bar}<StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={onExit} /></div>;
   const r = screen.r;
-  return <div key="results" className="view-in">{bar}<ResultsScreen r={r} inSession={!!session} onContinue={session?.onContinue} onAgain={() => startLesson(r.n)} onNext={() => openIntro(r.n + 1)} onEsc={onExit} /></div>;
+  return <div key="results"><Screen kind="results" />{bar}<ResultsScreen r={r} inSession={!!session} onContinue={session?.onContinue} onAgain={() => startLesson(r.n)} onNext={() => openIntro(r.n + 1)} onEsc={onExit} /></div>;
 }
 
 type Top = { k: "list" } | { k: "lesson"; n: number } | { k: "session" };
@@ -230,7 +231,7 @@ export function LearnFlow() {
   const toList = useCallback(() => setTop({ k: "list" }), []);
   if (top.k === "lesson") return <LessonFlow n0={top.n} onExit={toList} />;
   if (top.k === "session") return <SessionFlow onExit={toList} />;
-  return <div key="list" className="view-in"><LearnList onOpen={n => setTop({ k: "lesson", n })} onSession={() => setTop({ k: "session" })} /></div>;
+  return <div key="list"><Screen kind="learn" /><LearnList onOpen={n => setTop({ k: "lesson", n })} onSession={() => setTop({ k: "session" })} /></div>;
 }
 
 function ResultsScreen(p: { r: any; onAgain: () => void; onNext: () => void; onEsc: () => void; inSession: boolean; onContinue?: () => void }) {

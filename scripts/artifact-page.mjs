@@ -13,7 +13,9 @@ const styles = [...head.matchAll(/<style[^>]*>[\s\S]*?<\/style>/g)].map((m) => m
 const scripts = [...head.matchAll(/<script[^>]*>[\s\S]*?<\/script>/g)].map((m) => m[0]);
 if (/<script[^>]*\bsrc=/.test(scripts.join("")) || /<link[^>]*stylesheet[^>]*href="\/(?!\/)/.test(head))
   throw new Error("build still references external files; the artifact must be self-contained");
-const page = [title, '<meta name="claude:viewport-fit-sides" content="cover">', ...links, ...styles, body.trim(), ...scripts].join("\n");
+// classic inline scripts (the theme guard) go first so they run before the first paint; module scripts stay last
+const early = scripts.filter((s) => !/^<script[^>]*\btype="module"/.test(s)), late = scripts.filter((s) => !early.includes(s));
+const page = [title, '<meta name="claude:viewport-fit-sides" content="cover">', ...links, ...early, ...styles, body.trim(), ...late].join("\n");
 mkdirSync(out.replace(/\/[^/]+$/, ""), { recursive: true });
 writeFileSync(out, page);
 console.log(`artifact page: ${out} (${(page.length / 1024).toFixed(0)} KB)`);

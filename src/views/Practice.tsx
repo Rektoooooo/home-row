@@ -1,13 +1,13 @@
 /* PRACTICE: the adaptive "Next round" hero, round run, round result strip, Your keys / Slowest pairs, and the modes Real text / Code / Your text.
    Ported from legacy/src/app5.js (renderPractice, startRound) and app11.js (practice modes). Flow glue lives in core/flows.ts. */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ArrowDown, ArrowUp, Check, ChevronRight, Lock, RotateCcw } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Btn, Cap, ENTER, Panel, Pstat } from "@/components/parts";
+import { Btn, Cap, ENTER, Panel, Pstat, StatusChip } from "@/components/parts";
 import { TypingStage } from "@/components/TypingStage";
 import { S } from "@/core/state";
 import { settingChanged } from "@/core/store";
@@ -20,6 +20,7 @@ import { liveCheck } from "@/core/rewards";
 import { reduceMotion } from "@/ui/engine";
 import { useProgress } from "@/lib/progress";
 import { goLesson } from "@/lib/route";
+import { Screen, toTop } from "@/lib/screen";
 import { cn } from "@/lib/utils";
 import "@/styles/drills.css";
 
@@ -43,10 +44,10 @@ export function HPanel({ eyebrow, title, msg, children, foot, className }: { eye
    control, where Enter would press it again: drop focus after a mouse click (keyboard clicks have detail 0 and keep it). */
 export const mouseBlur = (e: React.MouseEvent<HTMLElement>) => { if (e.detail > 0) e.currentTarget.blur(); };
 
-/* segmented choice: shadcn ToggleGroup in the legacy .seg look */
-export function Seg({ label, value, options, onChange, className, children }: { label: string; value: string; options: [string, ReactNode][]; onChange: (v: string) => void; className?: string; children?: (v: string) => ReactNode }) {
+/* segmented choice: shadcn ToggleGroup in the legacy .seg look. Radix single groups emit "" when the selected item is clicked again: that keeps the value, and only a control that passes onReclick reacts */
+export function Seg({ label, value, options, onChange, onReclick, className, children }: { label: string; value: string; options: [string, ReactNode][]; onChange: (v: string) => void; onReclick?: () => void; className?: string; children?: (v: string) => ReactNode }) {
   return (
-    <ToggleGroup type="single" aria-label={label} className={cn("seg h-auto rounded-[10px]", className)} value={value} onValueChange={v => { if (v) onChange(v); }}>
+    <ToggleGroup type="single" aria-label={label} className={cn("seg h-auto rounded-[10px]", className)} value={value} onValueChange={v => { if (v) onChange(v); else onReclick?.(); }}>
       {options.map(([v, l]) => <ToggleGroupItem key={v} value={v} onClick={mouseBlur} className="h-auto min-w-0 hover:bg-transparent">{children ? children(v) : l}</ToggleGroupItem>)}
     </ToggleGroup>
   );
@@ -144,7 +145,7 @@ export function PracticeView() {
   const startAdaptive = (o: any) => setScr({ k: "adaptive", id: ++ids, o });
   const startMode = (o: any) => setScr({ k: "mode", id: ++ids, o });
   const head = (sub: string) => (<>
-    <div className="view-head"><h1>Practice</h1><p>{sub}</p></div>
+    <div className="view-head"><h1>Practice</h1>{sub ? <p>{sub}</p> : null}</div>
     <div className="pmodes">
       <ToggleGroup type="single" aria-label="Practice mode" className="seg h-auto rounded-[10px]" value={mode} onValueChange={v => { if (v) setMode(v); }}>
         {G.PMODES.map(m => (
@@ -160,16 +161,19 @@ export function PracticeView() {
   else if (G.pmLocked(mode)) page = <LockedPage m={mode} info={info} head={head} start={startMode} done={toIdle} refresh={refresh} />;
   else if (mode === "text") page = <TextPage info={info} head={head} refresh={refresh} startMode={startMode} done={toIdle} />;
   else page = <CodePage info={info} head={head} refresh={refresh} startMode={startMode} done={toIdle} />;
-  return <div className="view-in">{page}</div>;
+  return <div><Screen kind="idle" k={mode + "|" + G.pmLang() + "|" + (info ? 1 : 0)} />{page}</div>;
 }
 
 /* ---------- adaptive ---------- */
+/* "Show all keys" lives outside the page like legacy's module-level SHOWALL: it survives rounds and tab switches */
+let SHOWALL = false;
 function AdaptivePage({ info, head, refresh, start }: { info: any; head: (s: string) => ReactNode; refresh: () => void; start: (o: any) => void }) {
-  const [showAll, setShowAll] = useState(false);
+  const [showAll, setShowAllState] = useState(SHOWALL);
+  const toggleAll = () => { SHOWALL = !SHOWALL; setShowAllState(SHOWALL); };
   const pool = poolLetters(), st = S.settings;
   if (!pool.length) return (
     <>
-      {head("Short rounds built around your weakest key or letter pair.")}
+      {head("")}
       <div className="pw560"><Panel flat eyebrow="Practice" title="Nothing to practise yet" msg="Pass lesson 1 to start practising. Practice builds rounds from the keys you have learned."
         foot={<Btn primary hint={ENTER} onClick={() => goLesson(1)}>Go to lesson 1</Btn>} /></div>
     </>
@@ -220,7 +224,7 @@ function AdaptivePage({ info, head, refresh, start }: { info: any; head: (s: str
       <div className="pgrid2">
         <HPanel eyebrow="Your keys" msg="Weakest first. Tap a key to practise it.">
           <div className="klist">{shown.map(x => <KRow key={x.k} id={x.k} st={x.st} sv={x.sv} onPick={pick} />)}</div>
-          {keys.length > 8 ? <Btn variant="ghost" size="sm" className="showall" onClick={e => { mouseBlur(e); setShowAll(v => !v); }}>{showAll ? "Show fewer" : "Show all " + keys.length + " keys"}</Btn> : null}
+          {keys.length > 8 ? <Btn variant="ghost" size="sm" className="showall" onClick={e => { mouseBlur(e); toggleAll(); }}>{showAll ? "Show fewer" : "Show all " + keys.length + " keys"}</Btn> : null}
           <p className="small muted">Strong: {strong} of {pool.length} at {st.target} WPM and 95% accuracy.</p>
         </HPanel>
         <HPanel eyebrow="Slowest letter pairs" msg="Tap a pair to practise it.">
@@ -323,6 +327,7 @@ function LockedPage({ m, info, head, start, done, refresh }: { m: string; info: 
 function MinePage({ info, head, startMode, done }: { info: any; head: (s: string) => ReactNode; startMode: (o: any) => void; done: (i?: any) => void }) {
   const [draft, setDraft] = useState(MT_DRAFT);
   const [err, setErr] = useState("");
+  const ta = useRef<HTMLTextAreaElement>(null);
   const [, bump] = useState(0);
   const list = G.mtList(), res = info && info.mt ? info.mt : null;
   const setD = (v: string) => { MT_DRAFT = v; setDraft(v); setErr(""); };
@@ -337,7 +342,7 @@ function MinePage({ info, head, startMode, done }: { info: any; head: (s: string
   };
   const go = () => {
     const f = G.mtFeedback(draft, true);
-    if (f.err) { setErr(f.html); return; }
+    if (f.err) { setErr(f.html); ta.current?.focus(); return; }
     const parts = f.sp!.parts, title = f.c!.text.slice(0, 40).trim();
     const a = G.mtList().filter((x: any) => !(x.parts[0] === parts[0] && x.parts.length === parts.length));
     const t = { id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title, parts, next: 0, at: Date.now() };
@@ -351,7 +356,7 @@ function MinePage({ info, head, startMode, done }: { info: any; head: (s: string
   if (res && info.wpm != null) {
     const last = res.idx + 1 >= res.total;
     strip = <RoundStrip info={info} className="mt-strip"
-      status={last ? <span className="status ok"><Check size={14} aria-hidden="true" />All parts done</span> : null}
+      status={last ? <StatusChip ok label="All parts done" /> : null}
       extra={<span className="rbtns">{last ? <Btn primary onClick={() => done()}>Done</Btn> : <><Btn primary hint={ENTER} onClick={() => cont(res.id)}>Next part</Btn><Btn variant="ghost" onClick={() => done()}>Back to your texts</Btn></>}</span>} />;
   }
   return (
@@ -361,7 +366,7 @@ function MinePage({ info, head, startMode, done }: { info: any; head: (s: string
       <div className={cn("mtgrid", list.length > 0 && "two")}>
         <HPanel eyebrow="Your text" title="Type your own writing" foot={<Btn primary={goPrimary} onClick={go}>Clean up and start</Btn>}>
           <label className="vh" htmlFor="mt-in">Your text</label>
-          <Textarea id="mt-in" className="mtarea field-sizing-fixed" rows={6} maxLength={6000} placeholder="Paste an email, notes or any text you write often." spellCheck={false} autoComplete="off" value={draft} onChange={e => setD(e.target.value)} />
+          <Textarea ref={ta} id="mt-in" className="mtarea field-sizing-fixed" rows={6} maxLength={6000} placeholder="Paste an email, notes or any text you write often." spellCheck={false} autoComplete="off" value={draft} onChange={e => setD(e.target.value)} />
           <p className={cn("small mtmsg", err ? "err" : "muted")} id="mt-msg" role="status" aria-live="polite">{err || (fb ? fb.html : "")}</p>
           <p className="small muted">Saved in this browser only. Your text never leaves this device.</p>
         </HPanel>
@@ -374,7 +379,7 @@ function MinePage({ info, head, startMode, done }: { info: any; head: (s: string
                   <div className="mt"><strong>{t.title}</strong><span className="small muted">{lab}</span></div>
                   <div className="ma">
                     <Btn size="sm" primary={isFirst && firstPrimary} hint={isFirst ? ENTER : undefined} onClick={() => cont(t.id)}>{dn ? "Start again" : "Continue"}</Btn>
-                    <Btn variant="ghost" size="sm" aria-label={"Remove " + t.title} onClick={() => { G.mtSave(G.mtList().filter((x: any) => x.id !== t.id)); bump(n => n + 1); }}>Remove</Btn>
+                    <Btn variant="ghost" size="sm" aria-label={"Remove " + t.title} onClick={() => { G.mtSave(G.mtList().filter((x: any) => x.id !== t.id)); bump(n => n + 1); toTop(); }}>Remove</Btn>
                   </div>
                 </li>
               );

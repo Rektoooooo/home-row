@@ -12,6 +12,7 @@ import { connectAccount, installCoreHooks, loadCoach, setSaveStatus } from "@/co
 import { forwardFromOldHost, readMove } from "@/core/move";
 import { installUiHooks } from "@/ui/celebrate";
 import { installWelcomeHook } from "@/ui/welcome";
+import { addFavicon } from "@/core/shareCard";
 import { startMove } from "@/ui/move";
 import { showToast } from "@/ui/celebrate";
 import { App } from "./App";
@@ -19,6 +20,7 @@ import { App } from "./App";
 if (!forwardFromOldHost()) {
   readMove();
   watchTheme();
+  addFavicon();
   setS(loadLocal());
   loadCoach();
   installCoreHooks();

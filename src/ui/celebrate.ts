@@ -11,13 +11,21 @@ import { reduceMotion } from "./engine";
 export const TOAST_MS = 4500;
 export interface ToastOpts { icon?: string; title: string; sub?: string }
 
-/* medal icons are small trusted SVG strings built by the core (rewards.ts); title and sub are plain text */
-export function showToast(o: ToastOpts) {
-  toast.custom(() => createElement("div", { className: "toast" + (reduceMotion() ? " pulse" : ""), role: "status", "aria-live": "polite" },
-    o.icon ? createElement("span", { className: "toast-ic", dangerouslySetInnerHTML: { __html: o.icon } }) : null,
-    createElement("div", { className: "toast-t" }, createElement("b", null, o.title), o.sub ? createElement("span", null, o.sub) : null)),
-  { duration: TOAST_MS });
+/* legacy shows at most 3 toasts at once and queues the rest, each one getting its full 4.5 s once it is on screen */
+const TQ: ToastOpts[] = []; let TON = 0;
+function pumpToasts() {
+  while (TON < 3 && TQ.length) {
+    const o = TQ.shift()!; TON++;
+    let gone = false;
+    const leave = () => { if (gone) return; gone = true; TON--; pumpToasts(); };
+    /* medal icons are small trusted SVG strings built by the core (rewards.ts); title and sub are plain text */
+    toast.custom(() => createElement("div", { className: "toast" + (reduceMotion() ? " pulse" : ""), role: "status", "aria-live": "polite" },
+      o.icon ? createElement("span", { className: "toast-ic", dangerouslySetInnerHTML: { __html: o.icon } }) : null,
+      createElement("div", { className: "toast-t" }, createElement("b", null, o.title), o.sub ? createElement("span", null, o.sub) : null)),
+    { duration: TOAST_MS, onAutoClose: leave, onDismiss: leave });
+  }
 }
+export function showToast(o: ToastOpts) { TQ.push(o); pumpToasts(); }
 export const checkMedal = () => '<span class="medal" style="--ac:var(--ok);width:36px;height:36px"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span>';
 export { aico };
 

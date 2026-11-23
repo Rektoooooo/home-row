@@ -1,6 +1,6 @@
 /* TODAY'S SESSION: warm-up → lesson → practice → test/review with the session bar, the per-step summaries and the "Session done" screen.
    Ported from legacy/src/app7.js. The session lives in memory only (the Learn tab remounts on any route change, which ends it). */
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Check, X } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Btn, Cap, ENTER, Panel, Pstat } from "@/components/parts";
@@ -9,7 +9,7 @@ import { LESSONS, charInfo } from "@/core/data";
 import { minutesToday, pctTxt, poolLetters, streak } from "@/core/stats";
 import { buildSteps, mostImproved, predictFocus, sumRes, type Session, type SessionStep } from "@/core/flows";
 import { useEscape } from "@/lib/escape";
-import { countUp } from "@/ui/countup";
+import { Screen } from "@/lib/screen";
 import { LessonFlow } from "@/views/Learn";
 import { AdaptiveRound } from "@/views/Practice";
 import { TestRun } from "@/views/Test";
@@ -78,7 +78,6 @@ function UpNext({ st, sess }: { st: SessionStep; sess: Session }) {
 }
 
 function Between({ scr, sess, onContinue, onEnd }: { scr: Extract<Scr, { k: "between" }>; sess: Session; onContinue: () => void; onEnd: () => void }) {
-  useEffect(() => { countUp(); }, []);
   return (
     <div className="result">
       <Panel eyebrow={"Step " + sess.i + " of " + sess.steps.length} title={<>{scr.st.label} done</>}
@@ -92,7 +91,6 @@ function Between({ scr, sess, onContinue, onEnd }: { scr: Extract<Scr, { k: "bet
 
 function Done({ d, onBack, onMore }: { d: any; onBack: () => void; onMore: () => void }) {
   useEscape(onBack);
-  useEffect(() => { countUp(); }, []);
   const { all, m, g, st, best } = d;
   return (
     <div className="result">
@@ -126,6 +124,6 @@ export function SessionFlow({ onExit }: { onExit: () => void }) {
   }
   if (scr.k === "test") return <>{bar}<TestRun key={scr.id} dur={60} o={{ pool: "c200", caps: false, punct: false, nums: false }} onBack={onExit} onDone={res => { sess.rs.push(res); setScr(stepFinished(sess)); }} /></>;
   if (scr.k === "more") return <AdaptiveRound key={scr.id} o={{}} onBack={onExit} onDone={onExit} />;
-  if (scr.k === "between") return <div key={"b" + scr.id} className="view-in"><SessionBar sess={sess} noEnd onEnd={onExit} /><Between scr={scr} sess={sess} onContinue={() => setScr(runStep(sess))} onEnd={onExit} /></div>;
-  return <div key="done" className="view-in"><Done d={scr.d} onBack={onExit} onMore={() => setScr({ k: "more", id: ++ids })} /></div>;
+  if (scr.k === "between") return <div key={"b" + scr.id}><Screen kind="session" /><SessionBar sess={sess} noEnd onEnd={onExit} /><Between scr={scr} sess={sess} onContinue={() => setScr(runStep(sess))} onEnd={onExit} /></div>;
+  return <div key="done"><Screen kind="session" /><Done d={scr.d} onBack={onExit} onMore={() => setScr({ k: "more", id: ++ids })} /></div>;
 }

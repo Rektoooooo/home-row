@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw } from "lucide-react";
 import { Btn } from "@/components/parts";
+import { Screen } from "@/lib/screen";
 import { createExercise, stopExercise, focusSink, currentExercise } from "@/ui/engine";
 
 export interface StageOpts {
@@ -49,5 +50,5 @@ function Stage({ opts, onRestart }: { opts: StageOpts; onRestart: () => void }) 
 /* Restart (button or Esc) remounts the stage with the same options, like legacy mountStage(o) */
 export function TypingStage({ opts }: { opts: StageOpts }) {
   const [nonce, setNonce] = useState(0);
-  return <Stage key={nonce} opts={opts} onRestart={() => setNonce(n => n + 1)} />;
+  return <><Screen kind="stage" /><Stage key={nonce} opts={opts} onRestart={() => setNonce(n => n + 1)} /></>;
 }

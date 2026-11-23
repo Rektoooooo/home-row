@@ -19,6 +19,7 @@ import { useProgress, useSaveStatus } from "@/lib/progress";
 import { useEscape } from "@/lib/escape";
 import { goLesson, navigate } from "@/lib/route";
 import { countUp } from "@/ui/countup";
+import { Screen } from "@/lib/screen";
 import "@/styles/panels.css";
 
 /* the core calls hooks.rerenderCoach when the coach doc or the ask state changes (account snapshot, ask, mutate) */
@@ -237,9 +238,9 @@ export function CoachView() {
       focus: null, onFinish: stepDone, onBack: () => navigate("coach"),
     }} />;
   }
-  if (screen.k === "intro") return <div key={"intro" + screen.id} className="view-in"><Intro id={screen.id} onBack={toList} onStart={() => start(screen.id)} /></div>;
-  if (screen.k === "summary") return <div key={"sum" + screen.s} className="view-in"><StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={toList} /></div>;
-  if (screen.k === "results") return <div key="results" className="view-in"><Results r={screen.r} onAgain={() => start(screen.r.id)} onEsc={toList} /></div>;
-  return <div key="list" className="view-in"><CoachList onOpen={open} /></div>;
+  if (screen.k === "intro") return <div key={"intro" + screen.id}><Screen kind="intro" /><Intro id={screen.id} onBack={toList} onStart={() => start(screen.id)} /></div>;
+  if (screen.k === "summary") return <div key={"sum" + screen.s}><Screen kind="summary" /><StepDone run={run.current!} res={screen.res} s={screen.s} onNext={() => { run.current!.step++; runStage(); }} onEsc={toList} /></div>;
+  if (screen.k === "results") return <div key="results"><Screen kind="results" /><Results r={screen.r} onAgain={() => start(screen.r.id)} onEsc={toList} /></div>;
+  return <div key="list"><Screen kind="coach" /><CoachList onOpen={open} /></div>;
 }
 

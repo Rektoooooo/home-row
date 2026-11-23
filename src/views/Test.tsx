@@ -1,5 +1,5 @@
 /* TEST: options, the timed run, results with the speed chart, bests and recent tests. Ported from legacy/src/app5.js (renderTest, startTest, testDone). */
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowUp, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { bestCard, testCard } from "@/core/shareCard";
 import { openShare } from "@/ui/share";
 import { useProgress } from "@/lib/progress";
 import { useEscape } from "@/lib/escape";
+import { Screen } from "@/lib/screen";
+import { countUp } from "@/ui/countup";
 import { HPanel, IncludeRow, Seg, mouseBlur } from "@/views/Practice";
 import "@/styles/drills.css";
 
@@ -57,10 +59,12 @@ function Chart({ res, dur }: { res: any; dur: number }) {
 
 function TestResults({ res, dur, o, isBest, onSettings, onAgain }: { res: any; dur: number; o: TestCfg; isBest: boolean; onSettings: () => void; onAgain: () => void }) {
   useEscape(onSettings);
+  useEffect(() => { countUp(); }, []);
   const opts = [o.caps ? "capitals" : "", o.punct ? "punctuation" : "", o.nums ? "numbers" : ""].filter(Boolean);
   const eyebrow = "Test · " + dur + " s · " + POOL_NAME[o.pool] + (opts.length ? " · " + opts.join(", ") : "");
   return (
-    <div className="result view-in">
+    <div className="result">
+      <Screen kind="results" />
       <Panel wide eyebrow={eyebrow} title="Test done" status={isBest ? <NewBest /> : null}
         stats={<><Pstat lead num={Math.round(res.wpm)} label="WPM" sub={isBest ? "your best at " + dur + " s" : undefined} /><Pstat num={Math.round(res.raw)} label="Raw WPM" /><Pstat num={pctTxt(res.acc)} label="Accuracy" /><Pstat num={res.correct + " · " + res.mistakes} label="Correct · mistakes" /></>} statsCls="c4"
         foot={<>
@@ -103,7 +107,8 @@ export function TestView() {
   });
   const rows = S.tests.slice(-5).reverse();
   return (
-    <div className="view-in">
+    <div>
+      <Screen kind="idle" />
       <div className="view-head"><h1>Test</h1><p>Type as much as you can before the timer ends. Mistakes stay in the text. Backspace fixes them.</p></div>
       <div className="tgrid opts-panel">
         <HPanel eyebrow="Options" foot={<Btn primary hint={ENTER} onClick={start}>Start test</Btn>}>

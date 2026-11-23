@@ -152,6 +152,11 @@ const stageText = (page) => page.evaluate(() => [...document.querySelectorAll("#
   await page.locator(".stage-bar .btn").first().click(); await page.waitForSelector(".klist");
   // show all
   await page.click("text=Show all"); ok(await page.locator(".pgrid2 .klist").first().locator(".krow").count() === 26, "Show all keys → 26 rows");
+  await page.locator(".stage-bar .btn").first().count(); // (round started above was left)
+  await page.click('[data-tab=test]'); await page.waitForSelector(".tgrid"); await page.click('[data-tab=practice]'); await page.waitForSelector(".klist");
+  ok(await page.locator(".pgrid2 .klist").first().locator(".krow").count() === 26, "Show all keys survives a tab switch (legacy SHOWALL)");
+  await page.locator(".klist .krow").first().click(); await page.waitForSelector("#txt .c"); await page.locator(".stage-bar .btn").first().click(); await page.waitForSelector(".klist");
+  ok(await page.locator(".pgrid2 .klist").first().locator(".krow").count() === 26, "Show all keys survives a round");
   await page.click("text=Show fewer");
 
   // ---- Real text
@@ -237,6 +242,7 @@ const stageText = (page) => page.evaluate(() => [...document.querySelectorAll("#
   await page.context().close();
   const e = await newPage(b, { ...OPT, state: { ...seed4a({ passed: 0 }), keys: {}, days: {} }, hash: "#practice" }, REACT);
   ok((await T(e.page, ".panel h1")) === "Nothing to practise yet", "empty state");
+  ok(await e.page.locator("#view .view-head h1").innerText() === "Practice" && await e.page.locator("#view .view-head p").count() === 0 && await e.page.locator('[aria-label="Practice mode"]').count() === 1, "empty state: only the h1 and the mode switch (no subtitle)");
   await e.page.keyboard.press("Enter"); await e.page.waitForTimeout(200);
   ok(await e.page.locator(".intro").count() === 1, "empty state: Enter → lesson 1 intro");
   await e.ctx.close();
@@ -317,6 +323,71 @@ if (!process.argv.includes("--quick")) {
   ok(st.tests.length === 1 && st.tests[0].dur === 60, "session test recorded like any test");
   ok(errors.length === 0, "session test: no console errors " + errors.join(";"));
   await page.context().close();
+}
+
+/* ============================== parity round 2: scroll to top per screen, view-in only on fresh screens, count-up kinds, chips, focus ============================== */
+{
+  const tall = (page) => page.addStyleTag({ content: "#view{padding-bottom:2500px}" });
+  const y = (page) => page.evaluate(() => Math.round(scrollY));
+  const vin = (page) => page.evaluate(() => document.getAnimations().some((a) => a.animationName === "viewin"));
+  /* motion on: fade only on a fresh screen; Practice keeps the offset on shuffle, goes to the top after a round */
+  const { page, errors } = await newPage(b, { reducedMotion: "no-preference", state: seed4a({ passed: 22 }), hash: "#practice" }, REACT);
+  await tall(page); await page.waitForTimeout(400);
+  ok(!(await vin(page)), "view fade finished");
+  await page.evaluate(() => scrollTo(0, 300)); await page.waitForTimeout(100);
+  await page.getByRole("button", { name: /New words/ }).click(); await page.waitForTimeout(60);
+  ok((await y(page)) === 300 && !(await vin(page)), "New words keeps the scroll offset and does not fade (legacy keepScroll)");
+  await page.click('[aria-label="Practice mode"] >> text=Real text'); await page.waitForTimeout(50);
+  ok((await y(page)) === 0, "switching the practice mode scrolls to the top (legacy renderPractice)");
+  await page.click('[aria-label="Practice mode"] >> text=Adaptive'); await page.waitForSelector(".klist");
+  await page.evaluate(() => scrollTo(0, 300)); await page.getByRole("button", { name: /Start round/ }).click(); await page.waitForSelector("#txt .c");
+  await page.evaluate(() => scrollTo(0, 400)); await typeAll(page); await page.waitForSelector(".rstrip"); await page.waitForTimeout(60);
+  ok((await y(page)) === 0, "round result screen starts at the top");
+  await page.click('[data-tab=test]'); await page.waitForTimeout(40);
+  ok(await vin(page), "a tab switch fades the view in");
+  await page.waitForTimeout(300);
+  /* Test: idle -> run -> results; the results count up */
+  await page.evaluate(() => scrollTo(0, 300)); await page.locator('[aria-label="Duration"] [role=radio]').first().evaluate((e) => e.click()); await page.waitForTimeout(60);
+  ok((await y(page)) === 300, "changing the test duration keeps the scroll offset");
+  await page.getByRole("button", { name: /Start test/ }).click(); await page.waitForSelector("#txt .c");
+  const text = await stageText(page); for (const ch of text.slice(0, 25)) await press(page, ch);
+  await page.evaluate(() => { window.__nums = []; new MutationObserver(() => { const t = [...document.querySelectorAll("#view .result .pstat .num")].map((e) => e.textContent).join("|"); if (t) window.__nums.push(t); }).observe(document.getElementById("view"), { subtree: true, childList: true, characterData: true }); });
+  await page.evaluate(() => scrollTo(0, 500));
+  await page.waitForSelector(".result h1", { timeout: 20000 }); await page.waitForTimeout(800);
+  ok((await y(page)) === 0, "test results start at the top");
+  const seen = await page.evaluate(() => [...new Set(window.__nums)]);
+  ok(seen.length >= 2, "Test results count up (" + seen.length + " distinct renderings, last " + seen[seen.length - 1] + ")");
+  ok(errors.length === 0, "parity round 2: no console errors " + errors.join(";"));
+  await page.context().close();
+
+  /* session summary screens do NOT count up (legacy kind "session") but still go to the top */
+  const s2 = await newPage(b, { reducedMotion: "no-preference", state: seed4a({ passed: 5 }) }, REACT);
+  await tall(s2.page);
+  await s2.page.keyboard.press("Enter"); await s2.page.waitForSelector("#txt .c");
+  await s2.page.evaluate(() => { window.__nums = []; new MutationObserver(() => { const t = [...document.querySelectorAll("#view .result .pstat .num")].map((e) => e.textContent).join("|"); if (t) window.__nums.push(t); }).observe(document.getElementById("view"), { subtree: true, childList: true, characterData: true }); scrollTo(0, 300); });
+  await typeAll(s2.page); await s2.page.waitForSelector(".result h1"); await s2.page.waitForTimeout(800);
+  ok((await s2.page.locator(".result h1").innerText()) === "Warm-up done" && (await y(s2.page)) === 0, "session between screen starts at the top");
+  ok(new Set(await s2.page.evaluate(() => window.__nums)).size === 1, "session between screen does not count up");
+  /* the Learn step summary still does */
+  await s2.page.goto(REACT + "#learn", { waitUntil: "load" }); await s2.page.waitForTimeout(300);
+  await s2.page.locator(".lrow").first().click(); await s2.page.waitForSelector(".intro");
+  await s2.page.keyboard.press("Enter"); await s2.page.evaluate(() => { window.__nums = []; new MutationObserver(() => { const t = [...document.querySelectorAll("#view .result .pstat .num")].map((e) => e.textContent).join("|"); if (t) window.__nums.push(t); }).observe(document.getElementById("view"), { subtree: true, childList: true, characterData: true }); });
+  await typeAll(s2.page); await s2.page.waitForSelector(".result h1"); await s2.page.waitForTimeout(800);
+  ok(new Set(await s2.page.evaluate(() => window.__nums)).size >= 2, "Learn step summary still counts up");
+  await s2.ctx.close();
+
+  /* Your text: failed submit refocuses the textarea; the last part's chip is styled */
+  const m = await newPage(b, { ...OPT, state: seed4a({ passed: 22 }), hash: "#practice" }, REACT);
+  await m.page.click('[aria-label="Practice mode"] >> text=Your text'); await m.page.waitForSelector("#mt-in");
+  await m.page.click("text=Clean up and start"); await m.page.waitForTimeout(100);
+  ok(await m.page.evaluate(() => document.activeElement?.id) === "mt-in", "a failed Clean up and start refocuses the textarea");
+  await m.page.fill("#mt-in", "Dear team, here is the plan for next week. We meet on Monday at nine."); await m.page.click("text=Clean up and start"); await m.page.waitForSelector("#txt .c");
+  await typeAll(m.page); await m.page.waitForSelector(".rstrip");
+  const chip = m.page.locator(".rstrip .status");
+  ok(await chip.count() === 1 && /All parts done/.test(await chip.innerText()), "All parts done chip shown");
+  const cs = await chip.evaluate((e) => { const c = getComputedStyle(e); return { d: c.display, pad: c.paddingLeft, rad: c.borderTopLeftRadius, bg: c.backgroundColor, svg: !!e.querySelector("svg") }; });
+  ok(/flex/.test(cs.d) && cs.pad !== "0px" && cs.bg !== "rgba(0, 0, 0, 0)" && cs.svg, "All parts done chip is styled like the Passed chip: " + JSON.stringify(cs));
+  await m.ctx.close();
 }
 
 /* ============================== screenshots: React vs legacy, same seeded progress ============================== */

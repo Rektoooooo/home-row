@@ -67,7 +67,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <Row id="set-stop" label="Stop on mistakes" hint="The cursor waits until you press the right key." checked={!!st.stop} onChange={v => set("stop", v)} />
             <Field id="lbl-set-soundpack" label="Key sound" hint="Made in your browser. No audio files.">
               <Seg label="Key sound" value={st.soundPack} options={[["off", "Off"], ["soft", "Soft"], ["cream", "Creamy"], ["click", "Clicky"], ["type", "Typewriter"]]}
-                onChange={v => { S.settings.soundPack = v; S.settings.sound = v !== "off"; settingChanged(); soundPreview(v); }} />
+                onChange={v => { S.settings.soundPack = v; S.settings.sound = v !== "off"; settingChanged(); soundPreview(v); }} onReclick={() => soundPreview(st.soundPack)} />
             </Field>
           </Group>
           <Separator />
