@@ -5,6 +5,7 @@ import { lessonDone, poolLetters, keyWpm, applyTestResult, sumRes, wpmCalc } fro
 import { chooseFocus, focusStat, genPractice, pOpts, setPRI, niceStep, testChunk, POOL_NAME, paceFor } from "./generate";
 import { rewardsTest, liveCheck } from "./rewards";
 import { charInfo, LESSONS } from "./data";
+import { t, tn, speed, speedUnit } from "@/i18n";
 
 export { sumRes };
 
@@ -50,9 +51,9 @@ export function testChart(res: any, dur: number) {
   const last = pts[pts.length - 1] || { sec: 1, wpm: 0 };
   const marks: string[] = [];
   for (const s in miss) { const p = pts[+s - 1]; if (!p) continue; const x = X(+s), y = Y(p.wpm) - 9; marks.push("M" + (x - 3.5) + " " + (y - 3.5) + "l7 7m0-7l-7 7"); }
-  const tpts = pts.map((p: any) => ({ x: X(p.sec), y: Y(p.wpm), text: p.sec + " s · " + Math.round(p.wpm) + " WPM" + (miss[p.sec] ? " · " + miss[p.sec] + (miss[p.sec] === 1 ? " mistake" : " mistakes") : "") }));
+  const tpts = pts.map((p: any) => ({ x: X(p.sec), y: Y(p.wpm), text: miss[p.sec] ? tn(miss[p.sec], "{sec} s · {speed} {unit} · {n} mistake", "{sec} s · {speed} {unit} · {n} mistakes", { sec: p.sec, speed: speed(p.wpm), unit: speedUnit() }) : t("{sec} s · {speed} {unit}", { sec: p.sec, speed: speed(p.wpm), unit: speedUnit() }) }));
   return { W, H, T, ph, L, R, yTicks, xTicks, line, area, last, lastX: X(last.sec), lastY: Y(last.wpm), marks, tpts,
-    label: "Line chart of your speed during the test. It ends at " + Math.round(last.wpm) + " words per minute after " + dur + " seconds, with " + res.mistakes + " mistakes." };
+    label: tn(res.mistakes, "Line chart of your speed during the test. It ends at {speed} words per minute after {dur} seconds, with {n} mistake.", "Line chart of your speed during the test. It ends at {speed} words per minute after {dur} seconds, with {n} mistakes.", { speed: speed(last.wpm), dur }) };
 }
 
 /* ---- Today's session ---- */

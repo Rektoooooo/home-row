@@ -4,7 +4,8 @@
    the global listeners once. */
 import { S } from "@/core/state";
 import { save } from "@/core/store";
-import { DEAD, FING, LAY, CM, charInfo, reach, fcol, esc, idsFor } from "@/core/data";
+import { DEAD, LAY, CM, CO, charInfo, reach, fcol, esc, idsFor } from "@/core/data";
+import { t, finger, reachText, speed, pct } from "@/i18n";
 import { wpmCalc, applyKeyEvents, addDay, learnedChars } from "@/core/stats";
 import { audio, actx, keySound } from "@/core/sound";
 import { makeKeyboard, makeHands } from "./keyboard";
@@ -17,24 +18,24 @@ export const PACE_LIVE = new Set<any>();
 let EX: any = null, czechShown = false, lastComp: any = null, sinkEl: HTMLTextAreaElement | null = null;
 export const currentExercise = () => EX;
 
-const TIPS: any = {
-  dead: "Your U.S. International layout treats ' and \" as accent keys. Press Space after them to type the mark on its own; the app accepts that. Or switch to the ABC or U.S. layout while you practise.",
-  czech: "Your Czech keyboard is active. Switch the input source back to U.S. to match this course.",
-};
+/* course tips: only the English course shows them (the Czech course types its accents on purpose) */
+const tipText = (k: string) => k === "dead"
+  ? t("Your U.S. International layout treats ' and \" as accent keys. Press Space after them to type the mark on its own; the app accepts that. Or switch to the ABC or U.S. layout while you practise.")
+  : t("Your Czech keyboard is active. Switch the input source back to U.S. to match this course.");
 
 function hintHTML(ch: string) {
-  if (ch === "\n") return '<span class="dot" style="--fc:' + fcol("RP") + '"></span><b>Enter</b> · ' + FING.RP.n + ', new line';
+  if (ch === "\n") return '<span class="dot" style="--fc:' + fcol("RP") + '"></span>' + t("<b>{key}</b> · {finger}, new line", { key: t("key|Enter"), finger: finger("RP") });
   const i = charInfo(ch); if (!i) return "";
-  const lay = LAY(); const lbl = ch === " " ? "Space" : esc(ch);
-  if (ch === " ") return "<b>Space</b> · either thumb";
-  const k = i.key, f = FING[k.f], r = reach(k.id);
-  const where = r.home ? "home key" : "reach " + r.phrase + " from " + esc(r.from);
+  const lay = LAY(); const lbl = esc(ch);
+  if (ch === " ") return t("<b>{key}</b> · either thumb", { key: t("key|Space") });
+  const k = i.key, r = reach(k.id);
+  const where = r.home ? t("home key") : t("reach {phrase} from {from}", { phrase: reachText(r.phrase), from: esc(r.from) });
   const dot = '<span class="dot" style="--fc:' + fcol(k.f) + '"></span>';
   if (i.shift) {
-    const sf = FING[lay.byId[i.shiftId].f];
-    return dot + "<b>" + lbl + "</b> · hold " + (i.shiftId === "ShiftLeft" ? "left" : "right") + " Shift with your " + sf.n + ", then " + f.n + ", " + where;
+    const sf = lay.byId[i.shiftId].f, v = { key: lbl, sf: finger(sf, "ins"), finger: finger(k.f), where };
+    return dot + (i.shiftId === "ShiftLeft" ? t("<b>{key}</b> · hold left Shift with your {sf}, then {finger}, {where}", v) : t("<b>{key}</b> · hold right Shift with your {sf}, then {finger}, {where}", v));
   }
-  return dot + "<b>" + lbl.toUpperCase().replace("&AMP;", "&amp;") + "</b> · " + f.n + ", " + where;
+  return dot + t("<b>{key}</b> · {finger}, {where}", { key: lbl.toUpperCase().replace("&AMP;", "&amp;"), finger: finger(k.f), where });
 }
 
 export function focusSink() { try { sinkEl?.focus({ preventScroll: true }); } catch (e) {} }
@@ -122,7 +123,11 @@ export function createExercise(o: any, root: HTMLElement) {
   function showNext() {
     const mode = hintsMode();
     const hide = mode === "hidden" || o.noKb; kbwrap.hidden = hide; hintEl.hidden = hide;
-    const lab = (i: any, show: boolean) => { const t = i && show ? "Next key " + (text[E.pos] === " " ? "Space" : text[E.pos] === "\n" ? "Enter" : text[E.pos].toUpperCase()) + ", " + (i.shift ? "with Shift, " : "") + FING[i.key.f].n : "Keyboard"; q("kb").setAttribute("aria-label", t); q("hands").setAttribute("aria-label", i && show ? "Use your " + i.fingers.map((f: string) => FING[f].n).join(" and your ") : "Hands"); };
+    const lab = (i: any, show: boolean) => { 
+      const nk = text[E.pos] === " " ? t("key|Space") : text[E.pos] === "\n" ? t("key|Enter") : text[E.pos].toUpperCase();
+      const lb = i && show ? (i.shift ? t("Next key {key}, with Shift, {finger}", { key: nk, finger: finger(i.key.f) }) : t("Next key {key}, {finger}", { key: nk, finger: finger(i.key.f) })) : t("Keyboard");
+      q("kb").setAttribute("aria-label", lb);
+      q("hands").setAttribute("aria-label", i && show ? (i.fingers.length > 1 ? t("Use your {a} and your {b}", { a: finger(i.fingers[0]), b: finger(i.fingers[1]) }) : t("Use your {a}", { a: finger(i.fingers[0]) })) : t("Hands")); };
     if (E.pos >= N) { kb.set({ next: [] }); hands.set([]); hintEl.innerHTML = ""; return; }
     const i = text[E.pos] === "\n" ? enterInfo() : charInfo(text[E.pos]), show = mode === "always" || (mode === "hesitate" && E.reveal);
     lab(i, show);
@@ -135,16 +140,16 @@ export function createExercise(o: any, root: HTMLElement) {
   }
   function live(now: number) {
     const ms = elapsed(now);
-    q("l-wpm").textContent = ms > 2000 ? String(Math.round(wpmCalc(chars(), ms))) : "0";
-    q("l-acc").textContent = (E.presses ? Math.round(E.correct / E.presses * 100) : 100) + "%";
+    q("l-wpm").textContent = ms > 2000 ? String(speed(wpmCalc(chars(), ms))) : "0";
+    q("l-acc").textContent = pct((E.presses ? Math.round(E.correct / E.presses * 100) : 100) + "%");
     if (o.timeLimit) { const s = Math.floor(Math.min(ms, o.timeLimit) / 1000); while (E.secs.length < s) E.secs.push(chars()); }
-    if (o.timeLimit) { q("l-prog").textContent = Math.max(0, Math.ceil((o.timeLimit - ms) / 1000)) + "s"; q("l-prog-l").textContent = "Time left"; }
-    else { q("l-prog").textContent = E.pos + " / " + N; q("l-prog-l").textContent = "Typed"; }
+    if (o.timeLimit) { q("l-prog").textContent = t("{n}s", { n: Math.max(0, Math.ceil((o.timeLimit - ms) / 1000)) }); q("l-prog-l").textContent = t("Time left"); }
+    else { q("l-prog").textContent = E.pos + " / " + N; q("l-prog-l").textContent = t("Typed"); }
   }
   function paint(i: number) {
     const el = cs[i], m = marks[i]; el.className = "c" + (xc ? xc[i] : "") + (m === 1 ? " ok" : m === 2 ? " fx" : m === 3 ? " bad" : m === 4 ? " auto" : "");
   }
-  function showTip(k: string) { const t = q("tip"); if (!t) return; q("tip-t").textContent = TIPS[k]; t.hidden = false; }
+  function showTip(k: string) { const t = q("tip"); if (!t) return; q("tip-t").textContent = tipText(k); t.hidden = false; }
   function accept(ch: string, now: number) {
     if (!E.started) { E.started = true; E.seg = now; startPace(); }
     const exp = text[E.pos], hit = ch === exp, dt = E.presses > 0 ? now - E.last : null;
@@ -156,7 +161,7 @@ export function createExercise(o: any, root: HTMLElement) {
       if (!hit) { const k = exp.toLowerCase(); E.missBy[k] = (E.missBy[k] || 0) + 1; }
     }
     if (!hit) E.missAt.push(Math.floor(elapsed(now) / 1000) + 1);
-    if (!hit && /[ěščřžýáíéůú]/.test(ch) && !/[ěščřžýáíéůú]/.test(exp) && !czechShown) { czechShown = true; showTip("czech"); }
+    if (CO.id === "en" && !hit && /[ěščřžýáíéůú]/.test(ch) && !/[ěščřžýáíéůú]/.test(exp) && !czechShown) { czechShown = true; showTip("czech"); }
     if (hit) E.correct++; keySound(hit ? (exp === " " ? "space" : "key") : "error");
     if (hit || free) {
       marks[E.pos] = hit ? (missed[E.pos] ? 2 : 1) : 3; if (free && !hit) missed[E.pos] = 1; if (marks[E.pos] === 1 || marks[E.pos] === 2) { if (free) E.ok += marks[E.pos] === 1 ? 1 : 0; }
@@ -193,7 +198,7 @@ export function createExercise(o: any, root: HTMLElement) {
     placeCaret(); showNext(); live(performance.now());
   };
   E.flash = (code: string) => { E.lastCode = code; E.lastCodeT = performance.now(); kb.press(code); };
-  E.deadTip = () => { if (!S.seenTips.deadKey) { S.seenTips.deadKey = true; showTip("dead"); save(); } };
+  E.deadTip = () => { if (CO.id === "en" && !S.seenTips.deadKey) { S.seenTips.deadKey = true; showTip("dead"); save(); } };
   E.pause = function () {
     if (E.done || E.paused) return;
     if (E.started) E.act += performance.now() - E.seg;

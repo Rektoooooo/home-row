@@ -9,6 +9,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { setS, setSC } from "@/core/state";
 import { loadLocal, loadLocalCs } from "@/core/store";
 import { courseFromStore } from "@/core/course";
+import { hasProgress } from "@/core/stats";
+import { S } from "@/core/state";
+import { initLang, LANG, subscribeLang } from "@/i18n";
 import { connectAccount, installCoreHooks, loadCoach, setSaveStatus } from "@/core/sync";
 import { forwardFromOldHost, readMove } from "@/core/move";
 import { installUiHooks } from "@/ui/celebrate";
@@ -24,6 +27,9 @@ if (!forwardFromOldHost()) {
   addFavicon();
   setS(loadLocal());
   setSC(loadLocalCs()); courseFromStore();
+  /* app language: saved choice, else Czech for a brand-new visitor with a Czech browser, else English */
+  initLang(!hasProgress() && !S.seenTips.welcome);
+  document.documentElement.lang = LANG; subscribeLang(() => { document.documentElement.lang = LANG; });
   loadCoach();
   installCoreHooks();
   installUiHooks();

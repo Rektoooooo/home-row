@@ -2,6 +2,7 @@
    Markup is rendered once; the imperative engine (ui/engine.ts) drives everything inside it. */
 import { useEffect, useRef, useState } from "react";
 import { ChevronLeft, RotateCcw } from "lucide-react";
+import { t, speed, speedUnit } from "@/i18n";
 import { Btn } from "@/components/parts";
 import { Screen } from "@/lib/screen";
 import { createExercise, stopExercise, focusSink, currentExercise } from "@/ui/engine";
@@ -23,26 +24,26 @@ function Stage({ opts, onRestart }: { opts: StageOpts; onRestart: () => void }) 
   return (
     <section className="stage" id="stage" ref={root}>
       <div className="stage-bar">
-        <Btn variant="ghost" size="sm" onClick={() => o.onBack?.()}><ChevronLeft aria-hidden="true" />Back</Btn>
+        <Btn variant="ghost" size="sm" onClick={() => o.onBack?.()}><ChevronLeft aria-hidden="true" />{t("button|Back")}</Btn>
         <div className="crumb">{o.crumb}</div>
-        <Btn variant="outline" size="sm" onClick={() => currentExercise()?.restart()}><RotateCcw aria-hidden="true" />Restart<span className="kh" aria-hidden="true">esc</span></Btn>
+        <Btn variant="outline" size="sm" onClick={() => currentExercise()?.restart()}><RotateCcw aria-hidden="true" />{t("button|Restart")}<span className="kh" aria-hidden="true">esc</span></Btn>
       </div>
       <div className="live">
-        <div className="stat"><span className="num" id="l-wpm">0</span><span className="label">WPM</span></div>
-        <div className="stat"><span className="num" id="l-acc">100%</span><span className="label">Accuracy</span></div>
-        <div className="stat"><span className="num" id="l-prog">0</span><span className="label" id="l-prog-l">Typed</span></div>
-        {o.pace ? <div className="stat pace" title="The faint second cursor moves at this speed"><i className="gb" aria-hidden="true" /><span className="label">Pace</span><span className="num" id="l-pace">{Math.round(o.pace)}</span><span className="label">WPM</span></div> : null}
+        <div className="stat"><span className="num" id="l-wpm">0</span><span className="label">{speedUnit()}</span></div>
+        <div className="stat"><span className="num" id="l-acc">100%</span><span className="label">{t("Accuracy")}</span></div>
+        <div className="stat"><span className="num" id="l-prog">0</span><span className="label" id="l-prog-l">{t("Typed")}</span></div>
+        {o.pace ? <div className="stat pace" title={t("The faint second cursor moves at this speed")}><i className="gb" aria-hidden="true" /><span className="label">{t("Pace")}</span><span className="num" id="l-pace">{speed(o.pace)}</span><span className="label">{speedUnit()}</span></div> : null}
       </div>
       <div className="sheet" id="sheet">
         <div className="vp" id="vp"><div className="txt" id="txt" /></div>
-        <div className="pause" id="pause" hidden role="button" tabIndex={0}>Paused. Click here or press any key to continue.</div>
+        <div className="pause" id="pause" hidden role="button" tabIndex={0}>{t("Paused. Click here or press any key to continue.")}</div>
       </div>
       <div className="tip" id="tip" hidden ref={tip}>
         <p id="tip-t" />
-        <Btn variant="outline" size="sm" onClick={() => { if (tip.current) tip.current.hidden = true; if (currentExercise()) focusSink(); }}>Got it</Btn>
+        <Btn variant="outline" size="sm" onClick={() => { if (tip.current) tip.current.hidden = true; if (currentExercise()) focusSink(); }}>{t("button|Got it")}</Btn>
       </div>
       <div className="hint" id="hint" aria-live="off" />
-      <div className="kbwrap" id="kbwrap"><svg className="kb" id="kb" role="img" aria-label="Keyboard" /><svg className="hands" id="hands" role="img" aria-label="Hands" /></div>
+      <div className="kbwrap" id="kbwrap"><svg className="kb" id="kb" role="img" aria-label={t("Keyboard")} /><svg className="hands" id="hands" role="img" aria-label={t("Hands")} /></div>
     </section>
   );
 }

@@ -1,6 +1,7 @@
 /* SHARE CARD + LOGO geometry.  Ported verbatim from legacy/src/app9.js (logo) and app10.js (canvas drawing). No tests. */
 import { S, C } from "./state";
-import { dateKey, MON } from "./stats";
+import { dateKey } from "./stats";
+import { t as tr, speed, speedUnit, pct, monthShort } from "@/i18n";
 import { POOL_NAME } from "./generate";
 import { mondayOf, weekStats } from "./rewards";
 
@@ -87,25 +88,25 @@ export async function drawShareCard(o?:any,quick?:boolean){
     c.fillStyle="#FFFFFF";c.font="700 30px "+disp;c.fillText(it[1],x+24,cy+74);
     x+=w+16;
   });
-  c.fillStyle="rgba(255,255,255,.42)";c.font="600 15px "+mono;ls(2);c.textAlign="right";c.fillText("TOUCH TYPING · ALL TEN FINGERS",SW-M,SH-42);ls(0);c.textAlign="left";
+  c.fillStyle="rgba(255,255,255,.42)";c.font="600 15px "+mono;ls(2);c.textAlign="right";c.fillText(tr("TOUCH TYPING · ALL TEN FINGERS"),SW-M,SH-42);ls(0);c.textAlign="left";
   /* glowing finger-colour line */
   const bar=c.createLinearGradient(0,0,SW,0);[["#7C4DDB",0],["#2F6FE0",.34],["#0D8F84",.67],["#F5A524",1]].forEach(([col,p])=>bar.addColorStop(p,col));
   c.save();c.shadowColor="rgba(124,77,219,.85)";c.shadowBlur=26;c.fillStyle=bar;c.fillRect(0,SH-8,SW,8);c.restore();
   return new Promise((res,rej)=>cv.toBlob(b=>b?res(b):rej(new Error("no blob")),"image/png"));
 }
-export const longDate=(ts?:any)=>{const d=new Date(ts);return d.getDate()+" "+MON[d.getMonth()]+" "+d.getFullYear()};
+export const longDate=(ts?:any)=>{const d=new Date(ts);return tr("{d} {m} {y}",{d:d.getDate(),m:monthShort(d.getMonth()),mn:d.getMonth()+1,y:d.getFullYear()})};
 export function testCard(t?:any){
   const items=[];
-  if(t.acc!=null)items.push(["Accuracy",Math.round(t.acc*100)+"%"]);
-  items.push(["Test",t.dur+" s test · "+(POOL_NAME[t.pool]||t.pool)],["Date",longDate(t.ts)]);
-  return {kind:"test",big:String(Math.round(t.wpm)),unit:"WPM",tag:"Typing test",items,name:"home-row-"+Math.round(t.wpm)+"-wpm.png",alt:"Share card: "+Math.round(t.wpm)+" WPM"+(t.acc!=null?" at "+Math.round(t.acc*100)+"% accuracy":"")};
+  if(t.acc!=null)items.push([tr("Accuracy"),pct(Math.round(t.acc*100)+"%")]);
+  items.push([tr("Test"),tr("{dur} s test · {pool}",{dur:t.dur,pool:POOL_NAME[t.pool]?tr("pool|"+POOL_NAME[t.pool]):t.pool})],[tr("Date"),longDate(t.ts)]);
+  return {kind:"test",big:String(speed(t.wpm)),unit:speedUnit(),tag:tr("Typing test"),items,name:"home-row-"+Math.round(t.wpm)+"-wpm.png",alt:t.acc!=null?tr("Share card: {speed} {unit} at {acc} accuracy",{speed:speed(t.wpm),unit:speedUnit(),acc:pct(Math.round(t.acc*100)+"%")}):tr("Share card: {speed} {unit}",{speed:speed(t.wpm),unit:speedUnit()})};
 }
 export function weekCard(){
   const mon=mondayOf(new Date()),c=weekStats(mon),items=[];
-  if(c.wpm!=null)items.push(["Average speed",Math.round(c.wpm)+" WPM"]);
-  if(c.acc!=null)items.push(["Accuracy",Math.round(c.acc*100)+"%"]);
-  items.push(["Week","Week of "+mon.getDate()+" "+MON[mon.getMonth()]]);
-  return {kind:"week",big:String(Math.round(c.min)),unit:"MIN",tag:"This week",items,name:"home-row-week-"+dateKey(mon)+".png",alt:"Share card: "+Math.round(c.min)+" minutes of practice this week"};
+  if(c.wpm!=null)items.push([tr("Average speed"),speed(c.wpm)+" "+speedUnit()]);
+  if(c.acc!=null)items.push([tr("Accuracy"),pct(Math.round(c.acc*100)+"%")]);
+  items.push([tr("Week"),tr("Week of {d} {m}",{d:mon.getDate(),m:monthShort(mon.getMonth()),mn:mon.getMonth()+1})]);
+  return {kind:"week",big:String(Math.round(c.min)),unit:tr("MIN"),tag:tr("This week"),items,name:"home-row-week-"+dateKey(mon)+".png",alt:tr("Share card: {n} minutes of practice this week",{n:Math.round(c.min)})};
 }
 export function bestCard(){
   const d=S.settings.tDur,w=C().bests["test"+d]||0,t=C().tests.filter((x?:any)=>x.dur===d).sort((x?:any,y?:any)=>y.wpm-x.wpm)[0];

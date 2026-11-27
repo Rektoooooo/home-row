@@ -5,6 +5,7 @@ import { isObj, fin, C } from "./store";
 import { S } from "./state";
 import { strengthOf, keyWpm, keyAcc, lessonDone, nextLessonN, learnedChars, addDays, dateKey } from "./stats";
 import { slowPairs } from "./generate";
+import { t } from "@/i18n";
 
 export const COACH_LS="homerow.coach",COACH_PATH=(id?:any)=>"data/users/"+id+"/coach";
 export const ARTIFACT_URL="https://claude.ai/artifact/PXFc3xE9zfiTUu6bmdxXgM";
@@ -77,6 +78,8 @@ export function validateReply(d?:any,allowed?:any){
   return {note:d.note.trim().slice(0,300),title:c.title,why:c.why,steps:c.steps};
 }
 export const ASK_COPY:any={rate_limited:"Claude is busy or you've reached a usage limit. Try again later.",invalid_json:"Claude's answer couldn't be used. Try again."};
+/* the message for an error code, translated (ASK_COPY keeps the English text) */
+export const askErr=(code?:any)=>code==="rate_limited"?t("Claude is busy or you've reached a usage limit. Try again later."):code==="invalid_json"?t("Claude's answer couldn't be used. Try again."):t("Something went wrong. Try again.");
 export const HIDE_CODES=["not_granted","sampling_disabled","not_declared","capability_disabled","capability_removed"];
 /* the end of the JSON object that starts at st, or -1 (skips braces inside strings) */
 export function braceEnd(t?:any,st?:any){

@@ -3,8 +3,9 @@ import { LESSONS, CO } from "./data";
 import { S, C } from "./state";
 import { own, save } from "./store";
 import { hooks } from "./hooks";
-import { lessonDone, strengthOf, dateKey, addDays, streak, minutesToday, MON, DOW } from "./stats";
+import { lessonDone, strengthOf, dateKey, addDays, streak, minutesToday } from "./stats";
 import { POOL_NAME } from "./generate";
+import { t, tn, speed, speedUnit, dayLabel, dowShort } from "@/i18n";
 
 export const xpWords=()=>{let c=0;for(const k in S.days)c+=S.days[k].correct||0;return Math.floor(c/5)};
 /* level n needs 300+150*(n-1) more words to reach n+1: totals 300, 750, 1350, 2100 … */
@@ -70,6 +71,35 @@ export const ACH=[
   {id:"first-text",title:"First real text",desc:"Finish a text in Practice",cat:"special",icon:"page",test:()=>C().modes.text>=1},
   {id:"first-code",title:"First code",desc:"Finish a code snippet in Practice",cat:"special",icon:"brackets",test:()=>C().modes.code>=1}
 ];
+/* translated title and description for the UI (ACH keeps the English data shape; titles are ids, descriptions are whole sentences) */
+export const achTitle=(a:any)=>t("ach|"+a.title);
+export function achDesc(a:any):string{
+  const u=speedUnit();
+  switch(a.id){
+    case "first-lesson":return t("Pass lesson 1");
+    case "home-row":return t("Pass lessons 1 to 6");
+    case "all-letters":return t("Pass lessons 1 to {n}",{n:CO.allN-1});
+    case "course":return t("Pass all {n} lessons",{n:LESSONS.length});
+    case "three-stars":return t("Get 3 stars on a lesson");
+    case "star-collector":return t("Get 3 stars on 10 lessons");
+    case "streak-3":return t("Practise 3 days in a row");
+    case "streak-7":return t("Practise 7 days in a row");
+    case "streak-30":return t("Practise 30 days in a row");
+    case "wpm-20":return t("A test at {n} {unit} or more, with 90% accuracy or better",{n:speed(20),unit:u});
+    case "wpm-30":return t("A test at {n} {unit} or more, with 90% accuracy or better",{n:speed(30),unit:u});
+    case "wpm-40":return t("A test at {n} {unit} or more, with 90% accuracy or better",{n:speed(40),unit:u});
+    case "wpm-60":return t("A test at {n} {unit} or more, with 90% accuracy or better",{n:speed(60),unit:u});
+    case "sharp":return t("A test of 30 s or longer with 98% accuracy or better");
+    case "home-strong":return t("Make every home row key strong");
+    case "faster":return t("Beat your starting speed in a test, with 95% accuracy or better");
+    case "goal-5":return t("Reach your daily goal on 5 days");
+    case "level-5":return t("Reach level 5");
+    case "level-10":return t("Reach level 10");
+    case "first-text":return t("Finish a text in Practice");
+    case "first-code":return t("Finish a code snippet in Practice");
+  }
+  return a.desc;
+}
 export const achBy=(id?:any):any=>ACH.find(a=>a.id===id);
 export const medal=(a?:any,sz?:any,ic?:any)=>'<span class="medal" style="--ac:var('+ACOL[a.cat]+');width:'+sz+'px;height:'+sz+'px">'+aico(a.icon,ic)+'</span>';
 export let LASTLV: any = null;
@@ -82,7 +112,7 @@ export function checkAchievements(o?: any) {
     let ok = false; try { ok = !!a.test(); } catch (e) {}
     if (ok) { S.ach[a.id] = now; got.push(a.id); }
   });
-  if (got.length) { save(); if (!silent) got.forEach(id => { const a = achBy(id); hooks.toast({ icon: medal(a, 36, 20), title: "Achievement unlocked", sub: a.title }); }); }
+  if (got.length) { save(); if (!silent) got.forEach(id => { const a = achBy(id); hooks.toast({ icon: medal(a, 36, 20), title: t("Achievement unlocked"), sub: achTitle(a) }); }); }
   return got;
 }
 /* set when a celebration (confetti) is due; viewHook in the UI reads it once after the next view is set (legacy: CEL) */
@@ -93,7 +123,7 @@ export function takeCelebrate() { const fresh = CEL ? Date.now() - CEL < 4000 : 
 export function liveCheck(conf?: any) {
   if (conf) markCelebrate();
   const lv = levelInfo().level, up = LASTLV != null && lv > LASTLV; LASTLV = lv;
-  if (up) { const L = levelInfo(), left = L.need - L.into; hooks.toast({ icon: '<span class="medal" style="--ac:var(--fg);width:36px;height:36px">' + aico("chevron", 20) + '</span>', title: "Level " + lv, sub: "Keep going. Level " + (lv + 1) + " is " + left + " words away." }); }
+  if (up) { const L = levelInfo(), left = L.need - L.into; hooks.toast({ icon: '<span class="medal" style="--ac:var(--fg);width:36px;height:36px">' + aico("chevron", 20) + '</span>', title: t("Level {n}", { n: lv }), sub: tn(left, "Keep going. Level {next} is {n} word away.", "Keep going. Level {next} is {n} words away.", { next: lv + 1 }) }); }
   checkAchievements({ silent: false });
 }
 export function afterRemote() { LASTLV = levelInfo().level; checkAchievements({ silent: true }); }
@@ -111,7 +141,7 @@ export function rewardsLesson(conf: any) { liveCheck(conf); }
 export let SHT: any = null;
 export function rewardsTest(res: any, dur: number, o: any, isBest: boolean) {
   SHT = { wpm: res.wpm, acc: res.acc, dur, pool: o.pool, ts: Date.now() };
-  if (isBest) { markCelebrate(); hooks.toast({ icon: '<span class="medal" style="--ac:var(--f-ring);width:36px;height:36px">' + aico("bolt", 20) + '</span>', title: "New best · " + Math.round(res.wpm) + " WPM at " + dur + " s" }); }
+  if (isBest) { markCelebrate(); hooks.toast({ icon: '<span class="medal" style="--ac:var(--f-ring);width:36px;height:36px">' + aico("bolt", 20) + '</span>', title: t("New best · {speed} {unit} at {dur} s", { speed: speed(res.wpm), unit: speedUnit(), dur }) }); }
   liveCheck(false);
 }
 
@@ -124,10 +154,10 @@ export function weekStats(mon?:any){
   return {ms,min:ms/60000,wpm:ms>0&&chars>0?chars/5/(ms/60000):null,acc:pr>0?co/pr:null,tests:ts.length,best:ts.reduce((m?:any,t?:any)=>Math.max(m,t.wpm),0),has:ms>0||ts.length>0};
 }
 export function fmtMin(m?:any){
-  const r=Math.round(m);if(m>0&&r<1)return "<1 min";
-  return r>=60?Math.floor(r/60)+" h"+(r%60?" "+r%60+" min":""):r+" min";
+  const r=Math.round(m);if(m>0&&r<1)return t("<1 min");
+  return r>=60?(r%60?t("{h} h {m} min",{h:Math.floor(r/60),m:r%60}):t("{h} h",{h:Math.floor(r/60)})):t("{m} min",{m:r});
 }
 export function weekTitle(mon?:any){
-  const sun=addDays(mon,6),a=DOW[mon.getDay()]+" "+mon.getDate(),b=DOW[sun.getDay()]+" "+sun.getDate()+" "+MON[sun.getMonth()];
-  return mon.getMonth()===sun.getMonth()?a+" – "+b:a+" "+MON[mon.getMonth()]+" – "+b;
+  const sun=addDays(mon,6);
+  return t("{from} – {to}",{from:mon.getMonth()===sun.getMonth()?t("{dow} {day}",{dow:dowShort(mon.getDay()),day:mon.getDate()}):dayLabel(mon),to:dayLabel(sun)});
 }

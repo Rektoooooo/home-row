@@ -7,6 +7,7 @@ import { WL, EN_WL, BADDEAD, BLOCK, BG, LESSONS, STEP_NAMES, isLetter, rnd, pick
 import { S, C } from "./state";
 import { own } from "./store";
 import { strengthOf, weakW, lessonDone, poolLetters, usefulPair, keyWpm } from "./stats";
+import { t, tn, finger, speed, speedUnit } from "@/i18n";
 
 export function pseudoOnce(al?:any,min?:any,max?:any){
   let s="",p="^";
@@ -211,7 +212,7 @@ export function chooseFocus(pool?:any,avoid?:any){
   return key;
 }
 export const focusStat=(f?:any)=>f.length===2?C().pairs[f]:C().keys[f];
-export const pairFingers=(p?:any)=>FING[charInfo(p[0]).key.f].n+" then "+FING[charInfo(p[1]).key.f].n;
+export const pairFingers=(p?:any)=>t("{a} then {b}",{a:finger(charInfo(p[0]).key.f),b:finger(charInfo(p[1]).key.f)});
 export function genPairRound(pool?:any,pair?:any,o?:any){
   const set=new Set(pool),real=realPool(set,2,9);
   const wf=real.filter((w?:any)=>w.includes(pair)),wo=real.filter((w?:any)=>!w.includes(pair));
@@ -278,13 +279,16 @@ export const pmGet=(k?:any,d?:any)=>{try{const v=localStorage.getItem(k);return 
 export const pmSet=(k?:any,v?:any)=>{try{localStorage.setItem(k,v)}catch(e){}};
 export const pmJSON=(k?:any,d?:any)=>{try{const v=JSON.parse(localStorage.getItem(k) as any);return v==null?d:v}catch(e){return d}};
 export const PMODES=[["adaptive","Adaptive"],["text","Real text"],["code","Code"],["mine","Your text"]];
+/* translated names for the UI (the English names stay the ids) */
+export const poolName=(id?:any)=>POOL_NAME[id]?t("pool|"+POOL_NAME[id]):String(id);
+export const pmodeName=(id?:any)=>{const m=PMODES.find(x=>x[0]===id);return m?t("mode|"+m[1]):String(id)};
 export const PMLANGS=["All","JavaScript","Python","Swift","CSS","SQL","Shell"];
 /* Real text opens with the punctuation lesson, Code with the last numbers lesson (English course only) */
 export const pmLockN=(m?:any)=>m==="text"?CO.punctN:m==="code"?CO.numN[CO.numN.length-1]:0;
 export const pmLocked=(m?:any)=>{const n=pmLockN(m);return !!n&&!(lessonDone(n)||S.settings.unlockAll)};
 export function pmode(){const m=pmGet(PM_KEY,"adaptive");return PMODES.some(x=>x[0]===m)&&(m!=="code"||CO.code)?m:"adaptive"}
 export const courseTexts=()=>CO.id==="cs"?CS_TEXTS:TEXTS;
-export const pmChars=(n?:any)=>n+(n===1?" character":" characters");
+export const pmChars=(n?:any)=>tn(n,"{n} character","{n} characters");
 export let RT:any=null;
 export const pmDone=()=>{const a=pmJSON(PM_DONE,[]);return Array.isArray(a)?a.filter(x=>typeof x==="string"):[]};
 export function pmMarkDone(id?:any){pmSet(PM_DONE,JSON.stringify(pmDone().filter(x=>x!==id).concat(id).slice(-20)))}
@@ -292,8 +296,8 @@ export function pmPickText(){
   const T=courseTexts(),done=new Set(pmDone()),fresh=T.filter(t=>!done.has(t.t)&&t!==RT);
   RT=pick(fresh.length?fresh:T.filter(t=>t!==RT));
 }
-export function pmMinutes(n?:any){const w=C().bests.practice||S.settings.target||20,m=Math.max(1,Math.round(n/5/w));return "about "+m+(m===1?" minute":" minutes")}
-export function pmPaceLine(){const pc=paceFor("practice");return pc?'<p class="small muted">Pace caret: '+(S.settings.pace==="best"&&C().bests.practice>0?"your best, ":"")+Math.round(pc)+' WPM</p>':""}
+export function pmMinutes(n?:any){const w=C().bests.practice||S.settings.target||20,m=Math.max(1,Math.round(n/5/w));return tn(m,"about {n} minute","about {n} minutes")}
+export function pmPaceLine(){const pc=paceFor("practice");return pc?'<p class="small muted">'+(S.settings.pace==="best"&&C().bests.practice>0?t("Pace caret: your best, {speed} {unit}",{speed:speed(pc),unit:speedUnit()}):t("Pace caret: {speed} {unit}",{speed:speed(pc),unit:speedUnit()}))+'</p>':""}
 export let CS:any=null;
 export const pmLang=()=>{const l=pmGet(PM_LANG,"All");return PMLANGS.includes(l)?l:"All"};
 export const pmSnips=()=>{const l=pmLang();return l==="All"?SNIPPETS:SNIPPETS.filter(s=>s.lang===l)};
@@ -335,9 +339,9 @@ export const mtList=()=>{const a=pmJSON(PM_MINE,[]);return Array.isArray(a)?a.fi
 export const mtSave=(a?:any)=>pmSet(PM_MINE,JSON.stringify(a.slice(0,5)));
 export function mtFeedback(raw?:any,submit?:any){
   const c=cleanText(raw),sp=splitParts(c.text);let h="";
-  if(submit&&c.text.length<20)return {err:true,html:"Add at least 20 characters that can be typed."};
-  if(c.changed>0)h+="Changed "+c.changed+(c.changed===1?" character":" characters")+" so everything can be typed. ";
-  if(sp.cut)h+="Only the first "+MT_MAX+" parts are kept.";
+  if(submit&&c.text.length<20)return {err:true,html:t("Add at least 20 characters that can be typed.")};
+  if(c.changed>0)h+=tn(c.changed,"Changed {n} character so everything can be typed.","Changed {n} characters so everything can be typed.")+" ";
+  if(sp.cut)h+=t("Only the first {n} parts are kept.",{n:MT_MAX});
   return {err:false,html:h.trim(),c,sp};
 }
 

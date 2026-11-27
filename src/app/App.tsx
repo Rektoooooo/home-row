@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { Header } from "@/components/Header";
 import { SettingsDialog } from "@/components/SettingsDialog";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,8 @@ import { ShareDialog } from "@/components/ShareDialog";
 import { MoveDialog } from "@/components/MoveDialog";
 import { TestRun } from "@/views/Test";
 import { watchCelebrate } from "@/ui/celebrate";
+import { t } from "@/i18n";
+import { useLang } from "@/i18n/react";
 import { useWelcome, wlAbandonCheck, wlCheckBack, wlCheckDone } from "@/ui/welcome";
 
 const CHECK_CFG = { pool: "c200", caps: false, punct: false, nums: false };
@@ -24,6 +26,7 @@ const VIEWS: Record<string, () => React.JSX.Element> = { practice: PracticeView,
 
 export function App() {
   const { tab, nonce } = useRoute();
+  const lang = useLang();
   const [settings, setSettings] = useState(false);
   const [touch, setTouch] = useState(() => { try { return matchMedia("(pointer: coarse)").matches; } catch (e) { return false; } });
   const sink = useRef<HTMLTextAreaElement>(null);
@@ -39,13 +42,16 @@ export function App() {
     <div className="hr-shell" id="app">
       <Header onSettings={() => setSettings(true)} />
       <div className="col">
-        {touch ? <div className="note" id="touch-note"><span>Touch typing needs a physical keyboard. Connect one to practise here.</span><Button variant="outline" size="sm" onClick={() => setTouch(false)}>Dismiss</Button></div> : null}
+        {touch ? <div className="note" id="touch-note"><span>{t("Touch typing needs a physical keyboard. Connect one to practise here.")}</span><Button variant="outline" size="sm" onClick={() => setTouch(false)}>{t("button|Dismiss")}</Button></div> : null}
         <main id="view" tabIndex={-1}>
-          {wel.checking ? <TestRun key="wl-check" dur={60} o={CHECK_CFG} crumb="Welcome · Typing check" baseline onBack={wlCheckBack} onDone={wlCheckDone} /> :
-          tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : (() => { const V = VIEWS[tab]; return <V key={tab + nonce} />; })()}
+          {/* key={lang}: the views (and their imperative keyboards and engines) remount when the language changes; the header and dialogs just re-render */}
+          <Fragment key={lang}>
+            {wel.checking ? <TestRun key="wl-check" dur={60} o={CHECK_CFG} crumb={t("Welcome · Typing check")} baseline onBack={wlCheckBack} onDone={wlCheckDone} /> :
+            tab === "learn" ? <LearnFlow key={"learn" + nonce} /> : (() => { const V = VIEWS[tab]; return <V key={tab + nonce} />; })()}
+          </Fragment>
         </main>
       </div>
-      <textarea id="sink" ref={sink} aria-label="Typing input" autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} tabIndex={-1} />
+      <textarea id="sink" ref={sink} aria-label={t("Typing input")} autoComplete="off" autoCorrect="off" autoCapitalize="off" spellCheck={false} tabIndex={-1} />
       <SettingsDialog open={settings} onOpenChange={setSettings} />
       <Welcome />
       <ShareDialog />

@@ -9,7 +9,8 @@ import { rnd } from "./data";
 import { dateKey, addDays } from "./stats";
 import { hooks } from "./hooks";
 import { afterRemote, achBootHook, mondayOf, weekStats, aico } from "./rewards";
-import { COACH_LS, COACH_PATH, ARTIFACT_URL, clone, sanitizeCoach, allowedChars, buildSummary, buildPrompt, validateReply, ASK_COPY, HIDE_CODES, coachAsk } from "./coach";
+import { COACH_LS, COACH_PATH, ARTIFACT_URL, clone, sanitizeCoach, allowedChars, buildSummary, buildPrompt, validateReply, askErr, HIDE_CODES, coachAsk } from "./coach";
+import { t } from "@/i18n";
 
 /* ---- the claude.ai host object (legacy: window.claude) ---- */
 let injected: any = undefined, hasInjected = false;
@@ -20,6 +21,11 @@ export function getClaude(): any { return hasInjected ? injected : (typeof windo
 /* acct: the progress doc (English course, shared days and badges); acctCs: progress-cs (the Czech course) */
 export let saveStatus:any="connecting",acct:any=null,acctCs:any=null,writing=false,dirty=false,dirtyCs=false,retried=false,statusHooks:any[]=[];
 export const STATUS_TXT={connecting:"Connecting…",local:"Saved in this browser only",offline:"Saved in this browser only (offline)",account:"Saved to your claude.ai account",failed:"Saved in this browser only (account unavailable)"};
+/* the translated save status for the UI (STATUS_TXT keeps the English text) */
+export function statusText(s?:any):string{
+  switch(s){case "connecting":return t("Connecting…");case "local":return t("Saved in this browser only");case "offline":return t("Saved in this browser only (offline)");case "account":return t("Saved to your claude.ai account");case "failed":return t("Saved in this browser only (account unavailable)")}
+  return "";
+}
 export function setSaveStatus(s?:any){saveStatus=s;statusHooks.forEach(f=>{try{f(s)}catch(e){}})}
 /* store.save() calls this: queue an account write when an account is attached */
 setSaveHook(()=>{if(acct){dirty=true;if(takeCsPending()&&acctCs)dirtyCs=true;flush()}});
@@ -122,7 +128,7 @@ export async function askClaude(){
   }catch(e:any){
     const code=e&&e.code;
     if(HIDE_CODES.includes(code))coachOff=true;
-    ASK={running:false,ctl:null,ok:false,err:code==="cancelled"?"":(ASK_COPY[code]||"Something went wrong. Try again.")};
+    ASK={running:false,ctl:null,ok:false,err:code==="cancelled"?"":askErr(code)};
   }
   rerenderCoach();
 }
@@ -133,6 +139,7 @@ export const shareLocal=()=>!getClaude()||saveStatus==="local"||saveStatus==="of
 export const progressExport=()=>getClaude()?"Here is my Home Row typing progress. It is saved in this browser only. Check it, move it to my account and make me custom lessons: "+ARTIFACT_URL+"\n\n"+JSON.stringify(S):coachAsk();
 /* ---- weekly coach ---- */
 export const WK={running:false,fired:false,msg:""},WK_TRY="homerow.weeklyTry";
+/* English text of the "gone" message (the view shows it through t() and tests as coachOff) */
 export const WK_GONE="Claude isn't available for this page.";
 /* ISO week: weeks start on Monday, week 1 holds the first Thursday */
 export function isoWeek(d?:any){
@@ -155,7 +162,7 @@ export async function weeklyRun(o?:any){
   if(!SAMPLE||coachOff||WK.running||(!force&&!S.settings.weekly))return;
   const id=weekId();
   if((Array.isArray(COACH_RAW.lessons)?COACH_RAW.lessons:[]).some((l?:any)=>isObj(l)&&l.id===id)){
-    if(force){WK.msg="Done. Find it in the Coach tab.";syncWeeklyUI()}
+    if(force){WK.msg=t("Done. Find it in the Coach tab.");syncWeeklyUI()}
     return;
   }
   const today=dateKey();let tried="";
@@ -163,7 +170,7 @@ export async function weeklyRun(o?:any){
   if(!force&&tried===today)return;
   try{localStorage.setItem(WK_TRY,today)}catch(e){}
   if(!force&&practiceMs7()<300000)return;
-  WK.running=true;WK.msg="Writing this week's lesson…";syncWeeklyUI();
+  WK.running=true;WK.msg=t("Writing this week's lesson…");syncWeeklyUI();
   try{
     const allowed=allowedChars(),mon=mondayOf(new Date()),sum=buildSummary();
     sum.lastWeek=weekBrief(addDays(mon,-7));sum.thisWeekSoFar=weekBrief(mon);
@@ -175,12 +182,12 @@ export async function weeklyRun(o?:any){
       const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter((l?:any)=>!(isObj(l)&&typeof l.id==="string"&&l.id.indexOf("weekly-")===0));
       ls.unshift(lesson);raw.lessons=ls.slice(0,20);raw.note={text:v.note,at:now};return raw;
     });
-    WK.msg="Done. Find it in the Coach tab.";
-    hooks.toast({icon:'<span class="medal" style="--ac:var(--fg);width:36px;height:36px">'+aico("bolt",20)+'</span>',title:"This week's lesson is ready",sub:v.title});
+    WK.msg=t("Done. Find it in the Coach tab.");
+    hooks.toast({icon:'<span class="medal" style="--ac:var(--fg);width:36px;height:36px">'+aico("bolt",20)+'</span>',title:t("This week's lesson is ready"),sub:v.title});
   }catch(e:any){
     const code=e&&e.code;
-    if(HIDE_CODES.includes(code)){coachOff=true;S.settings.weekly=false;settingChanged();WK.msg=WK_GONE}
-    else WK.msg=force?(ASK_COPY[code]||"Something went wrong. Try again."):"";
+    if(HIDE_CODES.includes(code)){coachOff=true;S.settings.weekly=false;settingChanged();WK.msg=t("Claude isn't available for this page.")}
+    else WK.msg=force?askErr(code):"";
   }
   WK.running=false;syncWeeklyUI();
 }

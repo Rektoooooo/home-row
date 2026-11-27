@@ -5,6 +5,7 @@ import { MOVE, finishMove, moveNeeded, moveSummary } from "@/core/move";
 import { reroute } from "@/lib/route";
 import { checkMedal, showToast } from "./celebrate";
 import { showWelcome, wlHasProgress } from "./welcome";
+import { t } from "@/i18n";
 
 let M = { open: false, summary: "" };
 const subs = new Set<() => void>();
@@ -20,6 +21,6 @@ export function answerMove(yes: boolean) {
   finishMove(yes); set({ open: false });
   if (yes) {
     notify(); reroute();
-    showToast({ icon: checkMedal(), title: "Progress moved", sub: "Everything from the old address is here." });
+    showToast({ icon: checkMedal(), title: t("Progress moved"), sub: t("Everything from the old address is here.") });
   } else if (!S.seenTips.welcome && !wlHasProgress()) showWelcome(1);
 }

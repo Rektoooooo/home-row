@@ -4,6 +4,7 @@ import { S, setS } from "./state";
 import { LSK, sanitize, merge, stable, save, isObj, fin } from "./store";
 import { COACH_LS, sanitizeCoach, clone } from "./coach";
 import { COACH, COACH_RAW, applyCoachRaw } from "./sync";
+import { t, tn, list } from "@/i18n";
 
 export const OLD_HOST="home-row-lime.vercel.app",NEW_APP="https://homerow.sebthe.dev/app/";
 export let MOVE: any = null;
@@ -49,10 +50,10 @@ export function readMove(loc: any = (globalThis as any).location, hist: any = (g
 }
 export function moveSummary(M: any = MOVE) {
   const p = [];
-  if (M.lessons) p.push(M.lessons + (M.lessons === 1 ? " lesson" : " lessons") + " passed");
-  if (M.mins) p.push(M.mins + (M.mins === 1 ? " minute" : " minutes") + " of practice");
-  if (M.coach) p.push(M.coach + (M.coach === 1 ? " lesson" : " lessons") + " from Claude");
-  return p.length > 1 ? p.slice(0, -1).join(", ") + " and " + p[p.length - 1] : p[0] || "your progress";
+  if (M.lessons) p.push(tn(M.lessons, "{n} lesson passed", "{n} lessons passed"));
+  if (M.mins) p.push(tn(M.mins, "{n} minute of practice", "{n} minutes of practice"));
+  if (M.coach) p.push(tn(M.coach, "{n} lesson from Claude", "{n} lessons from Claude"));
+  return p.length ? list(p) : t("your progress");
 }
 /* showMove's question gate: false when everything is already here (the old link was opened again), and MOVE is cleared */
 export function moveNeeded() {

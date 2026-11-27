@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { t } from "@/i18n";
 import { fcol, charInfo } from "@/core/data";
 
 export const ENTER = "↵";
@@ -41,14 +42,14 @@ export function Panel({ eyebrow, title, status, msg, stats, statsCls, children, 
 
 export function StatusChip({ ok, label }: { ok: boolean; label?: string }) {
   return ok
-    ? <Badge variant="secondary" className="status ok h-auto gap-1.5 px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-fg"><Check size={14} strokeWidth={2} className="text-ok" aria-hidden="true" />{label ?? "Passed"}</Badge>
-    : <Badge variant="outline" className="status bad h-auto gap-1.5 border-0 bg-transparent px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-error shadow-[inset_0_0_0_1.5px_var(--error)]"><CircleAlert size={14} strokeWidth={2} aria-hidden="true" />Not passed yet</Badge>;
+    ? <Badge variant="secondary" className="status ok h-auto gap-1.5 px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-fg"><Check size={14} strokeWidth={2} className="text-ok" aria-hidden="true" />{label ?? t("Passed")}</Badge>
+    : <Badge variant="outline" className="status bad h-auto gap-1.5 border-0 bg-transparent px-2.5 py-1 font-heading text-[13px] leading-tight font-semibold text-error shadow-[inset_0_0_0_1.5px_var(--error)]"><CircleAlert size={14} strokeWidth={2} aria-hidden="true" />{t("Not passed yet")}</Badge>;
 }
 
 const STAR = "M12 2.5l3 6.4 7 .8-5.2 4.8 1.5 6.9L12 17.7 5.7 21.4l1.5-6.9L2 9.7l7-.8z";
 export function Stars({ n, size, pop }: { n: number; size: number; pop?: boolean }) {
   return (
-    <span className={"stars" + (pop ? " pp" : "")} role="img" aria-label={n + " of 3 stars"}>
+    <span className={"stars" + (pop ? " pp" : "")} role="img" aria-label={t("{n} of 3 stars", { n })}>
       {[1, 2, 3].map(i => (
         <svg key={i} width={size} height={size} viewBox="0 0 24 24" className={i <= n ? "star-on" : "star-off"} style={{ "--i": i - 1 } as any} aria-hidden="true"><path d={STAR} strokeWidth="1.6" strokeLinejoin="round" /></svg>
       ))}

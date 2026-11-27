@@ -1,6 +1,7 @@
 /* DATA: lessons, layouts, finger map, charInfo, reach, small helpers.  Ported from legacy/src/app1.js (+ idsFor from app2.js). */
 import { WORDS_CORE, WORDS_MORE } from "./words";
 import { S, SC, COURSE } from "./state";
+import { t } from "@/i18n";
 
 /* Course data is held in live bindings (export let): the English values below are the defaults, and setCourseData()
    (called by course.ts) swaps them for the Czech course. Importers read them at call time, so they follow the switch. */
@@ -131,6 +132,10 @@ export let LESSONS:any[]=EN_LESSONS;
   add("Numbers","Numbers 6 to 0",["6","7","8","9","0"],15,{digits:1});
 })();
 export const STEP_NAMES=["Find the keys","Combine","Words"];
+/* translated display names (the English data stays the id) */
+export const stepName=(n:string)=>n==="Find the keys"?t("step|Find the keys"):n==="Combine"?t("step|Combine"):n==="Words"?t("step|Words"):n==="Rhythm"?t("step|Rhythm"):n;
+export const lessonTitle=(L:any)=>t("lesson|"+L.title);
+export const stageName=(s:string)=>t("stage|"+s);
 
 /* letter bigram counts of a word list ("^" word start, "$" word end), for pseudo-words */
 export function bigrams(words:string[]){const BG:any={};const add=(a?:any,b?:any)=>{const r=BG[a]||(BG[a]={});r[b]=(r[b]||0)+1};

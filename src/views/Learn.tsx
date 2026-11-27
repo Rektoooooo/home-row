@@ -1,5 +1,6 @@
 /* LEARN: Today card, Course map, Lessons list, lesson intro, the 3-step run, step summaries and lesson results.
    Ported from legacy/src/app4.js (renderLearn, openIntro, startLesson, runStep, stepDone, showResults). */
+import { lessonTitle, stageName, stepName } from "@/core/data";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronLeft, Lock } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +22,8 @@ import { countUp } from "@/ui/countup";
 import { Screen } from "@/lib/screen";
 import { cn } from "@/lib/utils";
 import { SessionFlow } from "@/views/Session";
+import { t, tn, tx, num, pct, list, finger, reachText, speed, speedUnit } from "@/i18n";
+import { bold, NB } from "@/lib/bold";
 
 /* bars grow from 0 on a fresh screen (not under reduced motion) */
 function useGrown(v: number) {
@@ -32,38 +35,39 @@ function useGrown(v: number) {
 function LevelRow() {
   const L = levelInfo(), left = L.need - L.into, v = useGrown(L.pct);
   return (
-    <div className="lvl"><span className="lvl-n">Level {L.level}</span><Progress className="bar bg-sunken" value={v} aria-hidden="true" /><span className="lvl-t">{left} {left === 1 ? "word" : "words"} to level {L.level + 1}</span></div>
+    <div className="lvl"><span className="lvl-n">{t("Level {n}", { n: L.level })}</span><Progress className="bar bg-sunken" value={v} aria-hidden="true" /><span className="lvl-t">{tn(left, "{n} word to level {next}", "{n} words to level {next}", { next: L.level + 1 })}</span></div>
   );
 }
 
 function IntroLine({ ch }: { ch: string }) {
   const i = charInfo(ch); if (!i) return null;
-  const k = i.key, f = FING[k.f], r = reach(k.id), show = ch.toUpperCase();
+  const k = i.key, r = reach(k.id), show = ch.toUpperCase();
   if (i.shift) {
-    const sn = i.shiftId === "ShiftLeft" ? "left" : "right", sf = FING[LAY().byId[i.shiftId].f].n, base = k.base.toUpperCase();
-    return <><strong>{ch}</strong> · Shift + {base}. Hold {sn} Shift with your {sf}, then press {base} with your {f.n}.</>;
+    const left = i.shiftId === "ShiftLeft", sf = finger(LAY().byId[i.shiftId].f, "ins"), base = k.base.toUpperCase(), v = { key: <strong>{ch}</strong>, base, sf, f: finger(k.f, "ins") };
+    return <>{left ? tx("{key} · Shift + {base}. Hold left Shift with your {sf}, then press {base} with your {f}.", v) : tx("{key} · Shift + {base}. Hold right Shift with your {sf}, then press {base} with your {f}.", v)}</>;
   }
-  if (r.home) { const bump = (k.id === "KeyF" || k.id === "KeyJ") ? " Feel the bump." : ""; return <><strong>{show}</strong> · {f.n}. This is a home key. Rest the finger here.{bump}</>; }
-  return <><strong>{show}</strong> · {f.n}. From {r.from}, reach {r.phrase} and come back.</>;
+  if (r.home) { const v = { key: <strong>{show}</strong>, f: finger(k.f) }; return <>{k.id === "KeyF" || k.id === "KeyJ" ? tx("{key} · {f}. This is a home key. Rest the finger here. Feel the bump.", v) : tx("{key} · {f}. This is a home key. Rest the finger here.", v)}</>; }
+  return <>{tx("{key} · {f}. From {from}, reach {phrase} and come back.", { key: <strong>{show}</strong>, f: finger(k.f), from: r.from, phrase: reachText(r.phrase) })}</>;
 }
 
 function Intro({ n, onStart, onBack }: { n: number; onStart: () => void; onBack: () => void }) {
   const L = LESSONS[n - 1];
   const ids: string[] = L.shift ? ["ShiftLeft", "ShiftRight"] : idsFor(L.keys) as string[];
   const fingers = [...new Set(ids.map(id => LAY().byId[id]).filter(Boolean).map((k: any) => k.f))] as string[];
-  const extra = n === 1 ? "Rest your left fingers on A S D F and your right fingers on J K L ;. Feel the bumps on F and J. Thumbs rest on the space bar." :
-    L.shift ? "Capitals use the Shift key on the opposite hand. Press and hold Shift, tap the letter, then let go of both." :
-    L.punct ? "The apostrophe and quote keys are accent keys on your U.S. International layout. When one comes before a space, press the mark and then Space. The app accepts that." : "";
+  const hk = [...(CO.home as string)].map(c => c.toUpperCase());
+  const extra = n === 1 ? t("Rest your left fingers on {left} and your right fingers on {right}. Feel the bumps on F and J. Thumbs rest on the space bar.", { left: hk.slice(0, 4).join(" "), right: hk.slice(4).join(" ") }) :
+    L.shift ? t("Capitals use the Shift key on the opposite hand. Press and hold Shift, tap the letter, then let go of both.") :
+    L.punct && CO.id === "en" ? t("The apostrophe and quote keys are accent keys on your U.S. International layout. When one comes before a space, press the mark and then Space. The app accepts that.") : "";
   useEscape(onBack);
   let lines;
-  if (L.review) lines = <li><p>No new keys. This lesson mixes everything you know so far, with extra weight on your slower keys.</p></li>;
-  else if (L.shift) lines = [["ShiftLeft", "Left Shift", "Hold it with your left pinky for capitals typed with your right hand."], ["ShiftRight", "Right Shift", "Hold it with your right pinky for capitals typed with your left hand."]]
+  if (L.review) lines = <li><p>{t("No new keys. This lesson mixes everything you know so far, with extra weight on your slower keys.")}</p></li>;
+  else if (L.shift) lines = [["ShiftLeft", t("Left Shift"), t("Hold it with your left pinky for capitals typed with your right hand.")], ["ShiftRight", t("Right Shift"), t("Hold it with your right pinky for capitals typed with your left hand.")]]
     .map(x => <li key={x[0]}><Cap size="md" finger={LAY().byId[x[0]].f}>shift</Cap><p><strong>{x[1]}</strong> · {x[2]}</p></li>);
   else lines = L.keys.map((ch: string) => <li key={ch}><Cap k={ch} size="md" /><p><IntroLine ch={ch} /></p></li>);
   return (
     <div className="intro">
-      <Panel eyebrow={L.stage} title={<>Lesson {n} · {L.title}</>} msg={extra || undefined}
-        foot={<><Btn variant="ghost" onClick={() => navigate("learn")}><ChevronLeft aria-hidden="true" />Back to lessons</Btn><Btn primary hint={ENTER} onClick={onStart}>Start lesson</Btn></>}>
+      <Panel eyebrow={stageName(L.stage)} title={t("Lesson {n} · {title}", { n, title: lessonTitle(L) })} msg={extra || undefined}
+        foot={<><Btn variant="ghost" onClick={() => navigate("learn")}><ChevronLeft aria-hidden="true" />{t("button|Back to lessons")}</Btn><Btn primary hint={ENTER} onClick={onStart}>{t("button|Start lesson")}</Btn></>}>
         <ul className="keylist">{lines}</ul>
       </Panel>
       <div className="kbwrap" style={{ width: "100%" }}><Keyboard mode="stage" id="kb" next={ids} /><Hands id="hands" fingers={fingers} /></div>
@@ -73,16 +77,16 @@ function Intro({ n, onStart, onBack }: { n: number; onStart: () => void; onBack:
 
 function LessonRow({ l, nx, onOpen }: { l: any; nx: number; onOpen: (n: number) => void }) {
   const r = C().lessons[l.n], lock = !unlocked(l.n), isNext = l.n === nx, done = lessonDone(l.n);
-  const keyTxt = l.shift ? "Both Shift keys" : l.review ? "Mixed review" : (l.keys.map((k: string) => FING[(charInfo(k) || { key: { f: "TH" } }).key.f].n) as string[]).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).join(" and ");
+  const keyTxt = l.shift ? t("Both Shift keys") : l.review ? t("Mixed review") : list((l.keys.map((k: string) => (charInfo(k) || { key: { f: "TH" } }).key.f) as string[]).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).map(f => finger(f)));
   return (
     <button className={cn("lrow", lock && "locked", isNext && "next")} type="button" data-n={l.n} aria-disabled={lock || undefined} onClick={lock ? undefined : () => onOpen(l.n)}>
       <span className="lnum">{l.n}{done ? <span className="ckb"><Check size={10} strokeWidth={2} aria-hidden="true" /></span> : null}</span>
-      <span className="ltitle">{l.title}{isNext ? <Badge className="upchip ml-2 inline-flex h-auto rounded-full px-2 py-0.5 align-[2px] font-heading text-[11px] leading-[1.4] font-semibold tracking-[.04em] uppercase">Up next</Badge> : null}</span>
-      <span className="lsub">{lock ? "Pass lesson " + (l.n - 1) + " to unlock" : keyTxt}</span>
+      <span className="ltitle">{lessonTitle(l)}{isNext ? <Badge className="upchip ml-2 inline-flex h-auto rounded-full px-2 py-0.5 align-[2px] font-heading text-[11px] leading-[1.4] font-semibold tracking-[.04em] uppercase">{t("chip|Up next")}</Badge> : null}</span>
+      <span className="lsub">{lock ? t("Pass lesson {n} to unlock", { n: l.n - 1 }) : keyTxt}</span>
       <span className="lmeta">
-        {lock ? <Lock className="lock" role="img" aria-label="Locked" strokeWidth={2} /> : <>
+        {lock ? <Lock className="lock" role="img" aria-label={t("Locked")} strokeWidth={2} /> : <>
           <Stars n={r ? r.stars : 0} size={16} />
-          {r && r.attempts ? <><span>{Math.round(r.wpm)} WPM</span><span>{Math.round(r.acc * 100)}%</span></> : <span className="muted">Not started</span>}
+          {r && r.attempts ? <><span>{speed(r.wpm)} {speedUnit()}</span><span>{pct(Math.round(r.acc * 100) + "%")}</span></> : <span className="muted">{t("Not started")}</span>}
         </>}
       </span>
     </button>
@@ -100,33 +104,33 @@ function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSessi
   let stage = "";
   return (
     <>
-      <h1 className="vh">Learn</h1>
+      <h1 className="vh">{t("tab|Learn")}</h1>
       <Card className="today p-6 max-[560px]:p-[18px]">
         <div>
-          <span className="label">Today</span>
-          {L ? <h1>Lesson {nx} · {L.title}</h1> : <h1>All lessons passed</h1>}
+          <span className="label">{t("heading|Today")}</span>
+          {L ? <h1>{t("Lesson {n} · {title}", { n: nx, title: lessonTitle(L) })}</h1> : <h1>{t("All lessons passed")}</h1>}
           <div className="today-stats">
-            <span><b>{Math.floor(m)}</b> of {g} min today</span>
-            <span><b>{st}</b> day{st === 1 ? "" : "s"} streak</span>
-            {wk ? <span>Weakest key: <a href="#practice" style={{ color: "inherit" }}><b>{wk.toUpperCase()}</b></a></span> : null}
+            <span>{tx("{m} of {g} min today", { m: <b>{Math.floor(m)}</b>, g })}</span>
+            <span>{bold(tn(st, "{n} day streak", "{n} days streak", { n: NB }), st)}</span>
+            {wk ? <span>{tx("Weakest key: {key}", { key: <a href="#practice" style={{ color: "inherit" }}><b>{wk.toUpperCase()}</b></a> })}</span> : null}
           </div>
           <Progress className="bar bg-sunken mt-3.5 h-1.5 max-w-[380px]" value={bar} aria-hidden="true" />
           <LevelRow />
         </div>
         <div className="today-act">
           <div className="actions">
-            <Btn primary hint={ENTER} onClick={onSession}>Start today's session</Btn>
-            {L ? <Btn variant="outline" onClick={() => onOpen(nx)}>Lesson {nx} only</Btn> : <Btn variant="outline" onClick={() => onOpen(1)}>Repeat lesson 1</Btn>}
+            <Btn primary hint={ENTER} onClick={onSession}>{t("button|Start today's session")}</Btn>
+            {L ? <Btn variant="outline" onClick={() => onOpen(nx)}>{t("Lesson {n} only", { n: nx })}</Btn> : <Btn variant="outline" onClick={() => onOpen(1)}>{t("button|Repeat lesson 1")}</Btn>}
           </div>
-          <p className="small muted" style={{ marginTop: 10 }}>About 10 minutes: warm-up, lesson, practice, test.</p>
+          <p className="small muted" style={{ marginTop: 10 }}>{t("About 10 minutes: warm-up, lesson, practice, test.")}</p>
         </div>
       </Card>
-      <section className="section"><h2>Course map</h2>
-        <Card className="map-card mt-3"><Keyboard mode="map" id="map-kb" label="Keyboard showing the keys you have learned" learned={[...ids]} upnext={up.filter(x => !ids.has(x))} /><p className="small muted cap">Keys you know light up as you learn them.</p></Card>
+      <section className="section"><h2>{t("heading|Course map")}</h2>
+        <Card className="map-card mt-3"><Keyboard mode="map" id="map-kb" label={t("Keyboard showing the keys you have learned")} learned={[...ids]} upnext={up.filter(x => !ids.has(x))} /><p className="small muted cap">{t("Keys you know light up as you learn them.")}</p></Card>
       </section>
-      <section className="section"><h2>Lessons</h2>
+      <section className="section"><h2>{t("heading|Lessons")}</h2>
         {LESSONS.map(l => {
-          const head = l.stage !== stage ? (stage = l.stage, <div className="stage-h" key={"h" + l.n}><h3>{stage}</h3><span className="scount">{cnt[stage].d} of {cnt[stage].t} passed</span></div>) : null;
+          const head = l.stage !== stage ? (stage = l.stage, <div className="stage-h" key={"h" + l.n}><h3>{stageName(stage)}</h3><span className="scount">{t("{d} of {total} passed", { d: cnt[stage].d, total: cnt[stage].t })}</span></div>) : null;
           return <div key={l.n} style={{ display: "contents" }}>{head}<LessonRow l={l} nx={nx} onOpen={onOpen} /></div>;
         })}
       </section>
@@ -139,8 +143,8 @@ function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSessi
 let WLSET: Set<string> | null = null, WLSRC: string[] | null = null;
 const wlSet = () => { if (WLSRC !== WL) { WLSRC = WL; WLSET = new Set(WL); } return WLSET!; };
 function stepNames(texts: string[]) {
-  const t = texts[2].split(" "), real = t.filter(w => wlSet().has([...w.toLowerCase()].filter(c => CO.letterRe.test(c)).join(""))).length;
-  return [STEP_NAMES[0], STEP_NAMES[1], real < t.length / 2 ? "Rhythm" : "Words"];
+  const ws = texts[2].split(" "), real = ws.filter(w => wlSet().has([...w.toLowerCase()].filter(c => CO.letterRe.test(c)).join(""))).length;
+  return [STEP_NAMES[0], STEP_NAMES[1], real < ws.length / 2 ? "Rhythm" : "Words"]; /* English ids; shown through stepName() */
 }
 interface Run { n: number; step: number; texts: string[]; names: string[]; agg: { ms: number; chars: number; presses: number; correct: number; missBy: Record<string, number> }; }
 type Screen = { k: "intro"; n: number } | { k: "stage"; id: number } | { k: "summary"; res: any; s: number } | { k: "results"; r: any };
@@ -151,10 +155,10 @@ function StepDone({ run, res, s, onNext, onEsc }: { run: Run; res: any; s: numbe
   useEffect(() => { countUp(); }, []);
   return (
     <div className="result">
-      <Panel eyebrow={<>Lesson {n} · step {s} of {N}</>} title={<>{run.names[s - 1]} done</>}
-        stats={<><Pstat num={Math.round(res.wpm)} label="WPM" /><Pstat num={pctTxt(res.acc)} label="Accuracy" /></>} statsCls="c2"
-        foot={<><Btn variant="ghost" onClick={() => navigate("learn")}><ChevronLeft aria-hidden="true" />Back to lessons</Btn><Btn primary hint={ENTER} onClick={onNext}>Next step</Btn></>}>
-        <div className="upnext"><span className="label">Up next</span><span className="txt2">Step {s + 1} · {run.names[s]}</span></div>
+      <Panel eyebrow={t("Lesson {n} · step {s} of {N}", { n, s, N })} title={t("{name} done", { name: stepName(run.names[s - 1]) })}
+        stats={<><Pstat num={speed(res.wpm)} label={speedUnit()} /><Pstat num={pctTxt(res.acc)} label={t("Accuracy")} /></>} statsCls="c2"
+        foot={<><Btn variant="ghost" onClick={() => navigate("learn")}><ChevronLeft aria-hidden="true" />{t("button|Back to lessons")}</Btn><Btn primary hint={ENTER} onClick={onNext}>{t("button|Next step")}</Btn></>}>
+        <div className="upnext"><span className="label">{t("chip|Up next")}</span><span className="txt2">{t("Step {n} · {name}", { n: s + 1, name: stepName(run.names[s]) })}</span></div>
       </Panel>
     </div>
   );
@@ -163,18 +167,18 @@ function StepDone({ run, res, s, onNext, onEsc }: { run: Run; res: any; s: numbe
 function Results({ r, onAgain, onNext, inSession, onContinue }: { r: any; onAgain: () => void; onNext: () => void; inSession?: boolean; onContinue?: () => void }) {
   const { n, L, passed, stars, wpm, acc, pk, time, last } = r;
   useEffect(() => { countUp(); }, []);
-  const msg = passed ? (last ? "You finished the course." : "Lesson " + (n + 1) + " is unlocked.") : "Accuracy " + pctTxt(acc) + ". You need 95% to pass. Slow down a little and keep your eyes on the screen.";
-  const again = <Btn variant="outline" onClick={onAgain}>Try again</Btn>;
-  const foot = inSession ? <>{again}<Btn primary hint={ENTER} onClick={onContinue}>Continue session</Btn></> : passed
-    ? (last ? <>{again}<Btn primary hint={ENTER} onClick={() => navigate("learn")}>Back to lessons</Btn></> : <>{again}<Btn primary hint={ENTER} onClick={onNext}>Next lesson</Btn></>)
-    : <><Btn variant="outline" onClick={() => navigate("learn")}>Back to lessons</Btn><Btn primary hint={ENTER} onClick={onAgain}>Try again</Btn></>;
+  const msg = passed ? (last ? t("You finished the course.") : t("Lesson {n} is unlocked.", { n: n + 1 })) : t("Accuracy {acc}. You need 95% to pass. Slow down a little and keep your eyes on the screen.", { acc: pctTxt(acc) });
+  const again = <Btn variant="outline" onClick={onAgain}>{t("button|Try again")}</Btn>;
+  const foot = inSession ? <>{again}<Btn primary hint={ENTER} onClick={onContinue}>{t("button|Continue session")}</Btn></> : passed
+    ? (last ? <>{again}<Btn primary hint={ENTER} onClick={() => navigate("learn")}>{t("button|Back to lessons")}</Btn></> : <>{again}<Btn primary hint={ENTER} onClick={onNext}>{t("button|Next lesson")}</Btn></>)
+    : <><Btn variant="outline" onClick={() => navigate("learn")}>{t("button|Back to lessons")}</Btn><Btn primary hint={ENTER} onClick={onAgain}>{t("button|Try again")}</Btn></>;
   return (
     <div className="result">
-      <Panel eyebrow={<>Lesson {n} · {L.stage}</>} title={L.title} status={<StatusChip ok={passed} />} msg={msg}
-        stats={<><Pstat num={Math.round(wpm)} label="WPM" sub={"target " + L.wpm} /><Pstat num={pctTxt(acc)} label="Accuracy" sub="needs 95%" /><Pstat num={time} label="Time" /></>} foot={foot}>
+      <Panel eyebrow={t("Lesson {n} · {stage}", { n, stage: stageName(L.stage) })} title={lessonTitle(L)} status={<StatusChip ok={passed} />} msg={msg}
+        stats={<><Pstat num={speed(wpm)} label={speedUnit()} sub={t("target {n}", { n: speed(L.wpm) })} /><Pstat num={pctTxt(acc)} label={t("Accuracy")} sub={t("needs 95%")} /><Pstat num={time} label={t("Time")} /></>} foot={foot}>
         {passed ? <div className="stars-lg"><Stars n={stars} size={36} pop /></div> : null}
-        {pk.length ? <div><span className="label">Keys to watch</span><div className="pkrow" style={{ marginTop: 10 }}>
-          {pk.map(([k, c]: [string, number]) => <span className="pk" key={k}><Cap k={k} size="sm">{k === " " ? "space" : k.toUpperCase()}</Cap>{c} {c === 1 ? "miss" : "misses"}</span>)}
+        {pk.length ? <div><span className="label">{t("Keys to watch")}</span><div className="pkrow" style={{ marginTop: 10 }}>
+          {pk.map(([k, c]: [string, number]) => <span className="pk" key={k}><Cap k={k} size="sm">{k === " " ? "space" : k.toUpperCase()}</Cap>{tn(c, "{n} miss", "{n} misses")}</span>)}
         </div></div> : null}
       </Panel>
     </div>
@@ -216,7 +220,7 @@ export function LessonFlow({ n0, session, onExit }: { n0: number; session?: Less
   if (screen.k === "stage") {
     const rn = run.current!, N = rn.texts.length;
     return <>{bar}<TypingStage key={screen.id + "-" + rn.step} opts={{
-      crumb: "Lesson " + rn.n + " · Step " + rn.step + " of " + N + " · " + rn.names[rn.step - 1], text: rn.texts[rn.step - 1], mode: S.settings.stop ? "stop" : "free",
+      crumb: t("Lesson {n} · Step {s} of {N} · {name}", { n: rn.n, s: rn.step, N, name: stepName(rn.names[rn.step - 1]) }), text: rn.texts[rn.step - 1], mode: S.settings.stop ? "stop" : "free",
       focus: [...ctx(rn.n).all], onFinish: stepDone, onBack: () => navigate("learn"),
     }} /></>;
   }

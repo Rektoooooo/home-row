@@ -1,8 +1,9 @@
 /* STATS: scoring and derived numbers.  Ported from legacy/src/app1.js, app2.js, app5.js, app5b.js, app7.js. */
 import { LESSONS, BG, charInfo, LAY, isLetter, CO } from "./data";
 import { S, SC, C } from "./state";
+import { t, pct as pctI, dayLabel, speed, meetsSpeed } from "@/i18n";
 
-export const pctTxt=(a?:any)=>{const v=Math.floor(a*1000+1e-6)/10;return (Number.isInteger(v)?v:v.toFixed(1))+"%"};
+export const pctTxt=(a?:any)=>{const v=Math.floor(a*1000+1e-6)/10;return pctI((Number.isInteger(v)?v:v.toFixed(1))+"%")};
 export function wpmCalc(chars?:any,ms?:any){return ms>0?(chars/5)/(ms/60000):0}
 export function strengthOf(st?:any,minN?:any):any{
   if(!st||st.n<(minN||8))return null;
@@ -57,7 +58,7 @@ export function weakestKey(){
 export const keyWpm=(st?:any)=>st&&st.timeEma?Math.round(12000/st.timeEma):null;
 export const keyAcc=(st?:any)=>st&&st.n>0?Math.round((1-st.errEma)*100):null;
 export const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],DOW=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-export const dLabel=(d?:any)=>DOW[d.getDay()]+" "+d.getDate()+" "+MON[d.getMonth()];
+export const dLabel=(d?:any)=>dayLabel(d);
 export const dayWpm=(d?:any)=>d&&d.ms>=60000?d.chars/5/(d.ms/60000):null;
 export const addDays=(d?:any,n?:any)=>{const x=new Date(d.getFullYear(),d.getMonth(),d.getDate());x.setDate(x.getDate()+n);return x};
 export function heatMap(HEAT="speed"){
@@ -65,10 +66,15 @@ export function heatMap(HEAT="speed"){
   LAY().keys.forEach((k:any)=>{
     if(!k.base||k.space||k.nochar)return;
     const st=C().keys[k.base];if(!st||st.n<8)return;
-    if(HEAT==="speed"){const sv=strengthOf(st);if(sv==null)return;const pct=10+75*Math.min(sv,1);m[k.id]={pct,label:String(keyWpm(st)||0),hot:pct>=50}}
-    else{const a=1-st.errEma,pct=10+75*Math.max(0,Math.min(1,(a-.85)/.15));m[k.id]={pct,label:Math.round(a*100)+"%",hot:pct>=50}}
+    if(HEAT==="speed"){const sv=strengthOf(st);if(sv==null)return;const pct=10+75*Math.min(sv,1);m[k.id]={pct,label:String(speed(keyWpm(st)||0)),hot:pct>=50}}
+    else{const a=1-st.errEma,pct=10+75*Math.max(0,Math.min(1,(a-.85)/.15));m[k.id]={pct,label:pctI(Math.round(a*100)+"%"),hot:pct>=50}}
   });
   return m;
+}
+/* the step label for the UI (buildSteps keeps the English labels for ids and tests) */
+export function stepLabel(s:any){
+  switch(s.id){case "warm":return t("step|Warm-up");case "lesson":return t("step|Lesson");case "extra":return t("step|Practice round");case "practice":return t("step|Practice");case "test":return t("step|Test");case "review":return t("step|Review")}
+  return s.label;
 }
 export function buildSteps(){
   const nx=nextLessonN(),steps=[];
@@ -89,7 +95,7 @@ export function poolLetters(){
 /* LEARN-12 / LEARN-13: pass is acc >= .95 exactly; stars 1 (pass), 2 (wpm >= target), 3 (acc >= .98 and wpm >= target + 5). `target` is the lesson's wpm (or the setting for custom lessons). */
 export function scoreRun(agg: any, target: number) {
   const wpm = wpmCalc(agg.chars, agg.ms), acc = agg.presses ? agg.correct / agg.presses : 1, passed = acc >= .95;
-  let stars = 0; if (passed) { stars = 1; if (Math.round(wpm) >= target) stars = 2; if (acc >= .98 && Math.round(wpm) >= target + 5) stars = 3; }
+  let stars = 0; if (passed) { stars = 1; if (meetsSpeed(wpm, target)) stars = 2; if (acc >= .98 && meetsSpeed(wpm, target + 5)) stars = 3; }
   return { wpm, acc, passed, stars };
 }
 /* records a finished lesson into S (as showResults does). Returns what the result screen and rewardsLesson need. */

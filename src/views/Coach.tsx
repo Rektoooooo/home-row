@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { S, C } from "@/core/state";
 import { LESSONS } from "@/core/data";
-import { MON, applyCustomResult, lessonDone, pctTxt } from "@/core/stats";
+import { applyCustomResult, lessonDone, pctTxt } from "@/core/stats";
+import { t, tn, tx, monthShort, speed, speedUnit, pct } from "@/i18n";
 import { SHARE_PROMPT, importLessons } from "@/core/coach";
 import { isObj } from "@/core/store";
 import { setHooks } from "@/core/hooks";
@@ -28,17 +29,17 @@ const coachSubs = new Set<() => void>();
 setHooks({ rerenderCoach: () => { coachVer++; coachSubs.forEach(f => f()); } });
 const useCoachVersion = () => useSyncExternalStore(f => { coachSubs.add(f); return () => { coachSubs.delete(f); }; }, () => coachVer);
 
-const fmtDay = (ts: number) => { const d = new Date(ts); return d.getDate() + " " + MON[d.getMonth()]; };
-const copyText = (t: string) => { try { return navigator.clipboard.writeText(t); } catch (e) { return Promise.reject(e); } };
+const fmtDay = (ts: number) => { const d = new Date(ts); return t("{d} {mon}", { d: d.getDate(), mon: monthShort(d.getMonth()) }); };
+const copyText = (s: string) => { try { return navigator.clipboard.writeText(s); } catch (e) { return Promise.reject(e); } };
 
 /* ---- claude.ai: ask Claude ---- */
 function AskPanel() {
   if (!SAMPLE || !ACCT || coachOff || !LESSONS.some(l => lessonDone(l.n))) return null;
-  const body = ASK.ok ? <p className="small muted">New lesson added below.</p> : ASK.err ? <p className="small coach-err" role="alert">{ASK.err}</p> : null;
+  const body = ASK.ok ? <p className="small muted">{t("New lesson added below.")}</p> : ASK.err ? <p className="small coach-err" role="alert">{ASK.err}</p> : null;
   const foot = ASK.running
-    ? <><span className="grow muted thinking" role="status">Thinking<i>.</i><i>.</i><i>.</i></span><Btn variant="ghost" onClick={() => { if (ASK.ctl) ASK.ctl.abort(); }}>Stop</Btn></>
-    : <Btn variant="outline" onClick={() => { askClaude(); }}>Ask Claude for a lesson</Btn>;
-  return <section className="section-s"><SPanel tag="h2" eyebrow="Ask Claude" title="A lesson made for you" msg="Claude looks at your weakest keys and letter pairs and writes a short lesson for you. It uses your Claude usage." foot={foot}>{body}</SPanel></section>;
+    ? <><span className="grow muted thinking" role="status">{t("Thinking")}<i>.</i><i>.</i><i>.</i></span><Btn variant="ghost" onClick={() => { if (ASK.ctl) ASK.ctl.abort(); }}>{t("button|Stop")}</Btn></>
+    : <Btn variant="outline" onClick={() => { askClaude(); }}>{t("button|Ask Claude for a lesson")}</Btn>;
+  return <section className="section-s"><SPanel tag="h2" eyebrow={t("heading|Ask Claude")} title={t("A lesson made for you")} msg={t("Claude looks at your weakest keys and letter pairs and writes a short lesson for you. It uses your Claude usage.")} foot={foot}>{body}</SPanel></section>;
 }
 
 /* ---- website: paste Claude's reply to add lessons ---- */
@@ -52,17 +53,17 @@ function PastePanel() {
   const copy = () => {
     const text = progressExport();
     copyText(text).then(
-      () => { setCopied(true); setP(q => ({ ...q, msg: "Copied. Paste it into a chat with Claude.", err: false })); setTimeout(() => setCopied(false), 1600); },
-      () => { setP({ ...PASTE0, msg: "Your browser blocked copying. Select the text below and copy it." }); setFallback(text); },
+      () => { setCopied(true); setP(q => ({ ...q, msg: t("Copied. Paste it into a chat with Claude."), err: false })); setTimeout(() => setCopied(false), 1600); },
+      () => { setP({ ...PASTE0, msg: t("Your browser blocked copying. Select the text below and copy it.") }); setFallback(text); },
     );
   };
   const add = () => {
     const r = importLessons(p.text);
     const fail = (msg: string) => setP(q => ({ ...q, msg, err: true }));
-    if (!r) return fail("No lessons found. Paste Claude's whole reply, including the block that starts with {\"homerow\".");
-    if (!r.added.length) return fail(r.bad === 1 ? "That lesson can't be used: it has characters this keyboard can't type, or a step is too short or too long. Ask Claude to fix it." : "These lessons can't be used: they have characters this keyboard can't type, or steps that are too short or too long. Ask Claude to fix them.");
+    if (!r) return fail(t("No lessons found. Paste Claude's whole reply, including the block that starts with {\"homerow\"."));
+    if (!r.added.length) return fail(r.bad === 1 ? t("That lesson can't be used: it has characters this keyboard can't type, or a step is too short or too long. Ask Claude to fix it.") : t("These lessons can't be used: they have characters this keyboard can't type, or steps that are too short or too long. Ask Claude to fix them."));
     const ids = new Set(r.added.map((l: any) => l.id)), n = r.added.length;
-    setP({ open: false, text: "", err: false, msg: "Added " + n + (n === 1 ? " lesson" : " lessons") + " below." + (r.bad ? " " + r.bad + (r.bad === 1 ? " lesson" : " lessons") + " couldn't be used." : "") });
+    setP({ open: false, text: "", err: false, msg: tn(n, "Added {n} lesson below.", "Added {n} lessons below.") + (r.bad ? " " + tn(r.bad, "{n} lesson couldn't be used.", "{n} lessons couldn't be used.") : "") });
     coachMutate((raw: any) => {
       const ls = (Array.isArray(raw.lessons) ? raw.lessons : []).filter((x: any) => !(isObj(x) && ids.has(x.id)));
       raw.lessons = r.added.concat(ls).slice(0, 20); if (r.note) raw.note = r.note; return raw;
@@ -70,25 +71,25 @@ function PastePanel() {
   };
   const msg = <p className={"small " + (p.err ? "coach-err" : "muted")} id="paste-msg" role={p.err ? "alert" : "status"}>{p.msg}</p>;
   const body = p.open
-    ? <><label className="vh" htmlFor="paste-in">Claude's reply</label>
-        <Textarea id="paste-in" ref={area} className="mtarea field-sizing-fixed" rows={6} maxLength={40000} spellCheck={false} placeholder="Paste Claude's whole reply here" value={p.text} onChange={e => { const v = e.target.value; setP(q => ({ ...q, text: v })); }} />{msg}</>
-    : <><ol className="psteps"><li><b>Copy your progress.</b> It tells Claude your weakest keys and how to write the lessons.</li><li><b>Paste it into a chat with Claude</b> on claude.ai or in the Claude app.</li><li><b>Paste Claude's reply here.</b> Its lessons appear below.</li></ol>{msg}
-        {fallback != null ? <Textarea id="paste-copy" ref={fb} className="mtarea field-sizing-fixed" rows={5} readOnly aria-label="Your progress, ready to copy" value={fallback} /> : null}</>;
+    ? <><label className="vh" htmlFor="paste-in">{t("Claude's reply")}</label>
+        <Textarea id="paste-in" ref={area} className="mtarea field-sizing-fixed" rows={6} maxLength={40000} spellCheck={false} placeholder={t("Paste Claude's whole reply here")} value={p.text} onChange={e => { const v = e.target.value; setP(q => ({ ...q, text: v })); }} />{msg}</>
+    : <><ol className="psteps"><li>{tx("{lead} It tells Claude your weakest keys and how to write the lessons.", { lead: <b>{t("Copy your progress.")}</b> })}</li><li>{tx("{lead} on claude.ai or in the Claude app.", { lead: <b>{t("Paste it into a chat with Claude")}</b> })}</li><li>{tx("{lead} Its lessons appear below.", { lead: <b>{t("Paste Claude's reply here.")}</b> })}</li></ol>{msg}
+        {fallback != null ? <Textarea id="paste-copy" ref={fb} className="mtarea field-sizing-fixed" rows={5} readOnly aria-label={t("Your progress, ready to copy")} value={fallback} /> : null}</>;
   const foot = p.open
-    ? <><Btn variant="ghost" onClick={() => setP(PASTE0)}>Cancel</Btn><Btn onClick={add}>Add lessons</Btn></>
-    : <><Btn variant="outline" onClick={copy}>{copied ? "Copied" : "Copy my progress"}</Btn><Btn onClick={() => { setFallback(null); setP({ open: true, text: "", msg: "", err: false }); }}>Paste Claude's reply</Btn></>;
-  return <section className="section-s"><SPanel tag="h2" eyebrow="Three steps" title="Get new lessons from Claude" foot={foot}>{body}</SPanel></section>;
+    ? <><Btn variant="ghost" onClick={() => setP(PASTE0)}>{t("button|Cancel")}</Btn><Btn onClick={add}>{t("button|Add lessons")}</Btn></>
+    : <><Btn variant="outline" onClick={copy}>{copied ? t("button|Copied") : t("button|Copy my progress")}</Btn><Btn onClick={() => { setFallback(null); setP({ open: true, text: "", msg: "", err: false }); }}>{t("button|Paste Claude's reply")}</Btn></>;
+  return <section className="section-s"><SPanel tag="h2" eyebrow={t("heading|Three steps")} title={t("Get new lessons from Claude")} foot={foot}>{body}</SPanel></section>;
 }
 
 /* ---- your lessons ---- */
 function LessonCard({ l, rm, setRm, onOpen }: { l: any; rm: string; setRm: (id: string) => void; onOpen: (id: string) => void }) {
-  const r = C().custom[l.id], date = l.created ? " · " + fmtDay(l.created) : "";
-  const meta = r && r.attempts ? <><Stars n={r.stars} size={14} /><span>{Math.round(r.wpm)} WPM · {Math.round(r.acc * 100)}%</span></> : <span className="muted">Not started</span>;
+  const r = C().custom[l.id], date = l.created ? fmtDay(l.created) : "";
+  const meta = r && r.attempts ? <><Stars n={r.stars} size={14} /><span>{t("{s} {unit} · {acc}", { s: speed(r.wpm), unit: speedUnit(), acc: pct(Math.round(r.acc * 100) + "%") })}</span></> : <span className="muted">{t("Not started")}</span>;
   const foot = rm === l.id
-    ? <><span className="grow small">Remove this lesson?</span><Button variant="destructive" size="sm" onClick={() => { setRm(""); coachRemove(l.id); }}>Remove</Button><Button variant="ghost" size="sm" onClick={() => setRm("")}>Keep</Button></>
-    : <><Button variant="ghost" size="sm" onClick={() => setRm(l.id)}>Remove</Button><Button size="sm" onClick={() => onOpen(l.id)}>Start</Button></>;
+    ? <><span className="grow small">{t("Remove this lesson?")}</span><Button variant="destructive" size="sm" onClick={() => { setRm(""); coachRemove(l.id); }}>{t("button|Remove")}</Button><Button variant="ghost" size="sm" onClick={() => setRm("")}>{t("button|Keep")}</Button></>
+    : <><Button variant="ghost" size="sm" onClick={() => setRm(l.id)}>{t("button|Remove")}</Button><Button size="sm" onClick={() => onOpen(l.id)}>{t("button|Start")}</Button></>;
   return (
-    <SPanel tag="h3" eyebrow={(l.id.indexOf("weekly-") === 0 ? "This week · made by Claude" : l.by === "app" ? "Made in the app" : "Made in chat") + date} title={l.title}
+    <SPanel tag="h3" eyebrow={(() => { const lab = l.id.indexOf("weekly-") === 0 ? t("This week · made by Claude") : l.by === "app" ? t("Made in the app") : t("Made in chat"); return date ? t("{label} · {date}", { label: lab, date }) : lab; })()} title={l.title}
       msg={l.why ? <span className="clamp2">{l.why}</span> : undefined} foot={foot}><div className="cmeta">{meta}</div></SPanel>
   );
 }
@@ -98,11 +99,11 @@ function YourLessons({ ready, onOpen }: { ready: boolean; onOpen: (id: string) =
   if (!n && !COACH.note && !COACH.dropped && !ready) return null;
   return (
     <section className="section-s">
-      <div className="stage-h"><h2>Your lessons</h2>{n ? <span className="scount">{n}{n === 1 ? " lesson" : " lessons"}</span> : null}</div>
-      {COACH.note ? <div className="coach-note"><span className="label">Claude's note{COACH.note.at ? " · " + fmtDay(COACH.note.at) : ""}</span><p>{COACH.note.text}</p></div> : null}
+      <div className="stage-h"><h2>{t("heading|Your lessons")}</h2>{n ? <span className="scount">{tn(n, "{n} lesson", "{n} lessons")}</span> : null}</div>
+      {COACH.note ? <div className="coach-note"><span className="label">{COACH.note.at ? t("Claude's note · {date}", { date: fmtDay(COACH.note.at) }) : t("Claude's note")}</span><p>{COACH.note.text}</p></div> : null}
       {n ? <div className="cgrid">{COACH.lessons.map((l: any) => <LessonCard key={l.id} l={l} rm={rm} setRm={setRm} onOpen={onOpen} />)}</div>
-        : <div className="empty">No lessons yet. {getClaude() ? "Ask Claude above, or ask in any Claude chat." : "Paste Claude's reply above and they show up here."}</div>}
-      {COACH.dropped ? <p className="small muted" style={{ marginTop: 12 }}>{COACH.dropped}{COACH.dropped === 1 ? " lesson from Claude couldn't" : " lessons from Claude couldn't"} be used on this keyboard.</p> : null}
+        : <div className="empty">{getClaude() ? t("No lessons yet. Ask Claude above, or ask in any Claude chat.") : t("No lessons yet. Paste Claude's reply above and they show up here.")}</div>}
+      {COACH.dropped ? <p className="small muted" style={{ marginTop: 12 }}>{tn(COACH.dropped, "{n} lesson from Claude couldn't be used on this keyboard.", "{n} lessons from Claude couldn't be used on this keyboard.")}</p> : null}
     </section>
   );
 }
@@ -116,25 +117,25 @@ function ShareCard() {
   const copy = () => {
     const text = local ? progressExport() : SHARE_PROMPT;
     copyText(text).then(
-      () => { setLabel("Copied"); if (local) setMsg("Copied. Paste it into a chat with Claude."); setTimeout(() => setLabel(""), 1600); },
+      () => { setLabel(t("button|Copied")); if (local) setMsg(t("Copied. Paste it into a chat with Claude.")); setTimeout(() => setLabel(""), 1600); },
       () => {
         if (local) setBox(text);
         else if (pre.current) { const r = document.createRange(); r.selectNodeContents(pre.current); const s = getSelection(); s?.removeAllRanges(); s?.addRange(r); }
-        setMsg("Press ⌘C to copy");
+        setMsg(t("Press ⌘C to copy"));
       },
     );
   };
   if (local) return (
-    <section className="sect-gap"><SPanel tag="h2" eyebrow="Share with Claude" title="Send your progress to Claude"
-      msg="This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons."
-      foot={<Btn variant="outline" id="share-copy" onClick={copy}>{label || "Copy my progress"}</Btn>}>
-      <Textarea id="share-box" ref={area} className="promptbox exportbox field-sizing-fixed" readOnly rows={4} hidden={box == null} aria-label="Your progress, ready to copy" value={box ?? ""} />
+    <section className="sect-gap"><SPanel tag="h2" eyebrow={t("heading|Share with Claude")} title={t("Send your progress to Claude")}
+      msg={t("This copy saves your progress in this browser only, so Claude can’t see it. Copy it and paste it into a Claude chat. Claude can check it, move it to your account and add custom lessons.")}
+      foot={<Btn variant="outline" id="share-copy" onClick={copy}>{label || t("button|Copy my progress")}</Btn>}>
+      <Textarea id="share-box" ref={area} className="promptbox exportbox field-sizing-fixed" readOnly rows={4} hidden={box == null} aria-label={t("Your progress, ready to copy")} value={box ?? ""} />
       <p className="small muted" id="share-msg" role="status">{msg}</p></SPanel></section>
   );
   return (
-    <section className="sect-gap"><SPanel tag="h2" eyebrow="Share with Claude" title="Let Claude see your progress"
-      msg="Your progress is saved privately in your claude.ai account. In any Claude chat, ask Claude to check it. It can read your stats and add custom lessons to the Coach tab."
-      foot={<Btn variant="outline" id="share-copy" onClick={copy}>{label || "Copy prompt"}</Btn>}>
+    <section className="sect-gap"><SPanel tag="h2" eyebrow={t("heading|Share with Claude")} title={t("Let Claude see your progress")}
+      msg={t("Your progress is saved privately in your claude.ai account. In any Claude chat, ask Claude to check it. It can read your stats and add custom lessons to the Coach tab.")}
+      foot={<Btn variant="outline" id="share-copy" onClick={copy}>{label || t("button|Copy prompt")}</Btn>}>
       <pre className="promptbox" id="share-box" tabIndex={0} ref={pre}>{SHARE_PROMPT}</pre>
       <p className="small muted" id="share-msg" role="status">{msg}</p></SPanel></section>
   );
@@ -145,8 +146,8 @@ function CoachList({ onOpen }: { onOpen: (id: string) => void }) {
   const claude = !!getClaude();
   return (
     <>
-      <div className="view-head"><h1>Coach</h1><p>Claude reads your progress and writes short lessons for the keys you miss most.</p></div>
-      {!ready ? <div className="empty"><p>Pass lesson 1 first. Claude needs some of your typing to write lessons for you.</p><Btn variant="outline" onClick={() => goLesson(1)}>Go to lesson 1</Btn></div>
+      <div className="view-head"><h1>{t("tab|Coach")}</h1><p>{t("Claude reads your progress and writes short lessons for the keys you miss most.")}</p></div>
+      {!ready ? <div className="empty"><p>{t("Pass lesson 1 first. Claude needs some of your typing to write lessons for you.")}</p><Btn variant="outline" onClick={() => goLesson(1)}>{t("button|Go to lesson 1")}</Btn></div>
         : claude ? <AskPanel /> : <PastePanel />}
       <YourLessons ready={ready} onOpen={onOpen} />
       {claude ? <ShareCard /> : null}
@@ -164,8 +165,8 @@ function Intro({ id, onStart, onBack }: { id: string; onStart: () => void; onBac
   if (!l) return null;
   return (
     <div className="intro">
-      <Panel eyebrow={l.by === "app" ? "From Claude · made in the app" : "From Claude"} title={l.title} msg={l.why || undefined}
-        foot={<><Btn variant="ghost" onClick={onBack}><ChevronLeft aria-hidden="true" />Back to Coach</Btn><Btn primary hint={ENTER} onClick={onStart}>Start lesson</Btn></>}>
+      <Panel eyebrow={l.by === "app" ? t("From Claude · made in the app") : t("From Claude")} title={l.title} msg={l.why || undefined}
+        foot={<><Btn variant="ghost" onClick={onBack}><ChevronLeft aria-hidden="true" />{t("button|Back to Coach")}</Btn><Btn primary hint={ENTER} onClick={onStart}>{t("button|Start lesson")}</Btn></>}>
         <ol className="csteps">{l.steps.map((s: any, i: number) => <li key={i}><span className="cname">{s.name}</span><code>{s.text.length > 48 ? s.text.slice(0, 48) + "…" : s.text}</code></li>)}</ol>
       </Panel>
     </div>
@@ -178,10 +179,10 @@ function StepDone({ run, res, s, onNext, onEsc }: { run: Run; res: any; s: numbe
   useEffect(() => { countUp(); }, []);
   return (
     <div className="result">
-      <Panel eyebrow={<>From Claude · step {s} of {N}</>} title={<>{run.names[s - 1]} done</>}
-        stats={<><Pstat num={Math.round(res.wpm)} label="WPM" /><Pstat num={pctTxt(res.acc)} label="Accuracy" /></>} statsCls="c2"
-        foot={<><Btn variant="ghost" onClick={() => navigate("coach")}><ChevronLeft aria-hidden="true" />Back to lessons</Btn><Btn primary hint={ENTER} onClick={onNext}>Next step</Btn></>}>
-        <div className="upnext"><span className="label">Up next</span><span className="txt2">Step {s + 1} · {run.names[s]}</span></div>
+      <Panel eyebrow={t("From Claude · step {s} of {N}", { s, N })} title={t("{name} done", { name: run.names[s - 1] })}
+        stats={<><Pstat num={speed(res.wpm)} label={speedUnit()} /><Pstat num={pctTxt(res.acc)} label={t("Accuracy")} /></>} statsCls="c2"
+        foot={<><Btn variant="ghost" onClick={() => navigate("coach")}><ChevronLeft aria-hidden="true" />{t("button|Back to lessons")}</Btn><Btn primary hint={ENTER} onClick={onNext}>{t("button|Next step")}</Btn></>}>
+        <div className="upnext"><span className="label">{t("chip|Up next")}</span><span className="txt2">{t("Step {n} · {name}", { n: s + 1, name: run.names[s] })}</span></div>
       </Panel>
     </div>
   );
@@ -193,13 +194,13 @@ function Results({ r, onAgain, onEsc }: { r: any; onAgain: () => void; onEsc: ()
   useEffect(() => { countUp(); }, []);
   return (
     <div className="result">
-      <Panel eyebrow="From Claude" title={title} status={<StatusChip ok={passed} />}
-        msg={passed ? undefined : "Accuracy " + pctTxt(acc) + ". You need 95% to pass. Slow down a little and keep your eyes on the screen."}
-        stats={<><Pstat num={Math.round(wpm)} label="WPM" sub={"target " + target} /><Pstat num={pctTxt(acc)} label="Accuracy" sub="needs 95%" /><Pstat num={time} label="Time" /></>}
-        foot={<><Btn variant="outline" onClick={onAgain}>Try again</Btn><Btn primary hint={ENTER} onClick={() => navigate("coach")}>Back to Coach</Btn></>}>
+      <Panel eyebrow={t("From Claude")} title={title} status={<StatusChip ok={passed} />}
+        msg={passed ? undefined : t("Accuracy {acc}. You need 95% to pass. Slow down a little and keep your eyes on the screen.", { acc: pctTxt(acc) })}
+        stats={<><Pstat num={speed(wpm)} label={speedUnit()} sub={t("target {n}", { n: speed(target) })} /><Pstat num={pctTxt(acc)} label={t("Accuracy")} sub={t("needs 95%")} /><Pstat num={time} label={t("Time")} /></>}
+        foot={<><Btn variant="outline" onClick={onAgain}>{t("button|Try again")}</Btn><Btn primary hint={ENTER} onClick={() => navigate("coach")}>{t("button|Back to Coach")}</Btn></>}>
         {passed ? <div className="stars-lg"><Stars n={stars} size={36} pop /></div> : null}
-        {pk.length ? <div><span className="label">Keys to watch</span><div className="pkrow" style={{ marginTop: 10 }}>
-          {pk.map(([k, c]: [string, number]) => <span className="pk" key={k}><Cap k={k} size="sm">{k === " " ? "space" : k.toUpperCase()}</Cap>{c} {c === 1 ? "miss" : "misses"}</span>)}
+        {pk.length ? <div><span className="label">{t("Keys to watch")}</span><div className="pkrow" style={{ marginTop: 10 }}>
+          {pk.map(([k, c]: [string, number]) => <span className="pk" key={k}><Cap k={k} size="sm">{k === " " ? "space" : k.toUpperCase()}</Cap>{tn(c, "{n} miss", "{n} misses")}</span>)}
         </div></div> : null}
       </Panel>
     </div>
@@ -234,7 +235,7 @@ export function CoachView() {
   if (screen.k === "stage") {
     const rn = run.current!, N = rn.texts.length;
     return <TypingStage key={screen.n + "-" + rn.step} opts={{
-      crumb: "Claude · " + rn.title + " · Step " + rn.step + " of " + N + " · " + rn.names[rn.step - 1], text: rn.texts[rn.step - 1], mode: S.settings.stop ? "stop" : "free",
+      crumb: t("Claude · {title} · Step {s} of {N} · {name}", { title: rn.title, s: rn.step, N, name: rn.names[rn.step - 1] }), text: rn.texts[rn.step - 1], mode: S.settings.stop ? "stop" : "free",
       focus: null, onFinish: stepDone, onBack: () => navigate("coach"),
     }} />;
   }
