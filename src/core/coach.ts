@@ -11,12 +11,16 @@ import { t } from "@/i18n";
 export const COACH_LS="homerow.coach",COACH_PATH=(id?:any)=>"data/users/"+id+"/coach";
 export const ARTIFACT_URL="https://claude.ai/artifact/PXFc3xE9zfiTUu6bmdxXgM";
 export const SHARE_PROMPT="Check my Home Row typing progress and make me 2 custom lessons: "+ARTIFACT_URL;
+/* the Czech course: its progress is the progress-cs doc, and its lessons are Czech and tagged "course":"cs" */
+export const SHARE_PROMPT_CS="Check my Home Row typing progress in the Czech course (the progress-cs doc, Czech keyboard) and make me 2 custom lessons with common Czech words, each with \"course\":\"cs\": "+ARTIFACT_URL;
+export const sharePrompt=()=>CO.id==="cs"?SHARE_PROMPT_CS:SHARE_PROMPT;
 export const ID_RE=/^[A-Za-z0-9_-]{1,40}$/;
 export const clone=(o?:any)=>JSON.parse(JSON.stringify(o));
 /* l.course: "cs" for a Czech-course lesson (checked on the Czech keyboard); anything else is an English-course lesson */
 export function cleanLesson(l?:any,allowed?:any){
   if(!isObj(l)||typeof l.id!=="string"||!ID_RE.test(l.id))return null;
-  const course=l.course==="cs"?"cs":"en";
+  /* untagged lessons with Czech letters (written by Claude in a chat) belong to the Czech course */
+  const course=l.course==="cs"||(l.course!=="en"&&Array.isArray(l.steps)&&l.steps.some((s:any)=>isObj(s)&&typeof s.text==="string"&&/[ěščřžůďťňĚŠČŘŽŮĎŤŇ]/.test(s.text)))?"cs":"en";
   const title=typeof l.title==="string"?l.title.trim():"";
   if(title.length<1||title.length>60)return null;
   const why=l.why==null?"":l.why;if(typeof why!=="string"||why.length>200)return null;

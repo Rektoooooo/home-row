@@ -336,8 +336,10 @@ export function splitParts(text?:any,max?:any){
   const cap=max||MT_MAX;
   return {parts:parts.slice(0,cap),cut:parts.length>cap};
 }
-export const mtList=()=>{const a=pmJSON(PM_MINE,[]);return Array.isArray(a)?a.filter(x=>x&&typeof x.id==="string"&&Array.isArray(x.parts)&&x.parts.length):[]};
-export const mtSave=(a?:any)=>pmSet(PM_MINE,JSON.stringify(a.slice(0,5)));
+/* "Your text" is kept per course (a Czech text keeps č and ř, which the English course can't type) */
+const mtKey=()=>PM_MINE+(CO.id==="cs"?".cs":"");
+export const mtList=()=>{const a=pmJSON(mtKey(),[]);return Array.isArray(a)?a.filter(x=>x&&typeof x.id==="string"&&Array.isArray(x.parts)&&x.parts.length):[]};
+export const mtSave=(a?:any)=>pmSet(mtKey(),JSON.stringify(a.slice(0,5)));
 export function mtFeedback(raw?:any,submit?:any){
   const c=cleanText(raw),sp=splitParts(c.text);let h="";
   if(submit&&c.text.length<20)return {err:true,html:t("Add at least 20 characters that can be typed.")};

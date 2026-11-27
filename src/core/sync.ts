@@ -138,7 +138,7 @@ export const courseLessons=()=>COACH.lessons.filter((l:any)=>courseOf(l)===CO.id
 /* without an account Claude can't read the progress, so the card copies the whole progress instead of a prompt */
 export const shareLocal=()=>!getClaude()||saveStatus==="local"||saveStatus==="offline"||saveStatus==="failed";
 /* inside claude.ai the copy can be moved into the owner's account; on the website it only asks for advice and lessons */
-export const progressExport=()=>getClaude()?"Here is my Home Row typing progress. It is saved in this browser only. Check it, move it to my account and make me custom lessons: "+ARTIFACT_URL+"\n\n"+JSON.stringify(S):coachAsk();
+export const progressExport=()=>getClaude()&&CO.id==="cs"?"Here is my Home Row typing progress in the Czech course (Czech keyboard). It is saved in this browser only. Check it, move it to my account (the progress-cs doc) and make me custom lessons with common Czech words, each with \"course\":\"cs\": "+ARTIFACT_URL+"\n\n"+JSON.stringify(SC):getClaude()?"Here is my Home Row typing progress. It is saved in this browser only. Check it, move it to my account and make me custom lessons: "+ARTIFACT_URL+"\n\n"+JSON.stringify(S):coachAsk();
 /* ---- weekly coach ---- */
 export const WK={running:false,fired:false,msg:""},WK_TRY="homerow.weeklyTry";
 /* English text of the "gone" message (the view shows it through t() and tests as coachOff) */

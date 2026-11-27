@@ -16,7 +16,7 @@ export function scanKeys(root: string): Found[] {
   const files: string[] = [];
   const walk = (d: string) => { for (const e of fs.readdirSync(d, { withFileTypes: true })) { const p = path.join(d, e.name); if (e.isDirectory()) walk(p); else if (/\.(ts|tsx)$/.test(e.name) && !/\.test\.ts$/.test(e.name)) files.push(p); } };
   ROOTS.forEach(r => { const d = path.join(root, r); if (fs.existsSync(d)) walk(d); });
-  const reT = new RegExp(String.raw`\b(t|tx)\(\s*(?:${STR})`, "g");
+  const reT = new RegExp(String.raw`\b(t|tx|tr)\(\s*(?:${STR})`, "g");
   const reN = new RegExp(String.raw`\btn\([^,]+,\s*(?:${STR})\s*,\s*(?:${STR})`, "g");
   for (const f of files) {
     const src = fs.readFileSync(f, "utf8"), rel = path.relative(root, f);

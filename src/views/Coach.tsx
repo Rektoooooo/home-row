@@ -11,7 +11,7 @@ import { S, C } from "@/core/state";
 import { LESSONS } from "@/core/data";
 import { applyCustomResult, lessonDone, pctTxt } from "@/core/stats";
 import { t, tn, tx, monthShort, speed, speedUnit, pct } from "@/i18n";
-import { SHARE_PROMPT, importLessons } from "@/core/coach";
+import { sharePrompt, importLessons } from "@/core/coach";
 import { isObj } from "@/core/store";
 import { setHooks } from "@/core/hooks";
 import { rewardsLesson } from "@/core/rewards";
@@ -115,7 +115,7 @@ function ShareCard() {
   const area = useRef<HTMLTextAreaElement>(null), pre = useRef<HTMLPreElement>(null);
   useEffect(() => { if (box != null && area.current) { area.current.focus(); area.current.select(); } }, [box]);
   const copy = () => {
-    const text = local ? progressExport() : SHARE_PROMPT;
+    const text = local ? progressExport() : sharePrompt();
     copyText(text).then(
       () => { setLabel(t("button|Copied")); if (local) setMsg(t("Copied. Paste it into a chat with Claude.")); setTimeout(() => setLabel(""), 1600); },
       () => {
@@ -136,7 +136,7 @@ function ShareCard() {
     <section className="sect-gap"><SPanel tag="h2" eyebrow={t("heading|Share with Claude")} title={t("Let Claude see your progress")}
       msg={t("Your progress is saved privately in your claude.ai account. In any Claude chat, ask Claude to check it. It can read your stats and add custom lessons to the Coach tab.")}
       foot={<Btn variant="outline" id="share-copy" onClick={copy}>{label || t("button|Copy prompt")}</Btn>}>
-      <pre className="promptbox" id="share-box" tabIndex={0} ref={pre}>{SHARE_PROMPT}</pre>
+      <pre className="promptbox" id="share-box" tabIndex={0} ref={pre}>{sharePrompt()}</pre>
       <p className="small muted" id="share-msg" role="status">{msg}</p></SPanel></section>
   );
 }

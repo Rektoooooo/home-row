@@ -46,14 +46,14 @@ function Recap() {
   const mon = mondayOf(new Date()), c = weekStats(mon), p = weekStats(addDays(mon, -7));
   if (!c.has) return <section className="wrecap"><SPanel tag="h2" eyebrow={t("heading|This week")} title={weekTitle(mon)} msg={t("No practice yet this week. Even 10 minutes counts.")} /></section>;
   const dm = p.ms > 0 ? Math.round(c.min) - Math.round(p.min) : null;
-  const dw = c.wpm == null || p.wpm == null ? null : Math.round(c.wpm) - Math.round(p.wpm);
+  const dw = c.wpm == null || p.wpm == null ? null : speed(c.wpm) - speed(p.wpm);
   const da = c.acc == null || p.acc == null ? null : Math.round(c.acc * 100) - Math.round(p.acc * 100);
   return (
     <section className="wrecap">
       <SPanel tag="h2" eyebrow={t("heading|This week")} title={weekTitle(mon)} statsCls="c4e"
         stats={<>
           <Pstat num={fmtMin(c.min)} label={t("Time")} sub={dm == null ? undefined : <Delta d={dm} txt={fmtMin(Math.abs(dm))} /> as any} />
-          <Pstat num={c.wpm == null ? "–" : speed(c.wpm)} label={t("Avg {unit}", { unit: speedUnit() })} sub={dw == null ? undefined : <Delta d={dw} txt={speedTxt(Math.abs(dw))} /> as any} />
+          <Pstat num={c.wpm == null ? "–" : speed(c.wpm)} label={t("Avg {unit}", { unit: speedUnit() })} sub={dw == null ? undefined : <Delta d={dw} txt={Math.abs(dw) + " " + speedUnit()} /> as any} />
           <Pstat num={c.acc == null ? "–" : pct(Math.round(c.acc * 100) + "%")} label={t("Accuracy")} sub={da == null ? undefined : <Delta d={da} txt={pct(Math.abs(da) + "%")} /> as any} />
           <Pstat num={c.tests} label={t("Tests")} sub={c.best ? t("best {s}", { s: speedTxt(c.best) }) : undefined} />
         </>}

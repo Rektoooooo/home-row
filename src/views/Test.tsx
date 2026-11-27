@@ -100,10 +100,10 @@ export function TestView() {
 
   const setDur = (d: number) => { S.settings.tDur = d; settingChanged(); };
   const tiles = [15, 30, 60, 120].map(d => {
-    const b = Math.round(C().bests["test" + d] || 0), tr = C().tests.filter((x: any) => x.dur === d).sort((x: any, y: any) => y.wpm - x.wpm)[0];
+    const raw = C().bests["test" + d] || 0, b = Math.round(raw), tr = C().tests.filter((x: any) => x.dur === d).sort((x: any, y: any) => y.wpm - x.wpm)[0];
     return (
       <button key={d} type="button" className="best" aria-pressed={st.tDur === d} onClick={e => { mouseBlur(e); setDur(d); }}>
-        <span className="label">{t("{d} s", { d })}</span><span className="num">{b ? speed(b) : "–"}</span><span className="sub">{!b ? t("No test yet") : tr ? t("{acc} accuracy", { acc: pct(Math.round(tr.acc * 100) + "%") }) : ""}</span>
+        <span className="label">{t("{d} s", { d })}</span><span className="num">{b ? speed(raw) : "–"}</span><span className="sub">{!b ? t("No test yet") : tr ? t("{acc} accuracy", { acc: pct(Math.round(tr.acc * 100) + "%") }) : ""}</span>
       </button>
     );
   });

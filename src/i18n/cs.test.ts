@@ -36,7 +36,8 @@ describe("Czech dictionary", () => {
     const pl = new Map(found.filter(f => f.plural).map(f => [f.key, f.plural!]));
     for (const [k, v] of Object.entries(CS)) {
       const want = ph(k + (pl.get(k) || ""));
-      for (const s of Array.isArray(v) ? v : [v]) expect(ph(s), k + " → " + s).toEqual(want);
+      /* {mn} (month number) is passed with every month name, so Czech may use it instead of {m} */
+      for (const s of Array.isArray(v) ? v : [v]) { const got = ph(s); expect(got.every(p => want.includes(p) || p === "{mn}") && want.every(p => got.includes(p) || (p === "{m}" && got.includes("{mn}"))), k + " → " + s).toBe(true); }
     }
   });
   it("no stale entries", () => {

@@ -2,7 +2,7 @@
 import { S, C } from "./state";
 import { dateKey } from "./stats";
 import { t as tr, speed, speedUnit, pct, monthShort } from "@/i18n";
-import { POOL_NAME } from "./generate";
+import { POOL_NAME, poolName } from "./generate";
 import { mondayOf, weekStats } from "./rewards";
 
 export const LOGO_F="M-4-8V4M-4-8h8M-4-2.5h6.5",LOGO_J="M3.5-8v8a3.75 3.75 0 0 1-7.5 0";
@@ -98,7 +98,7 @@ export const longDate=(ts?:any)=>{const d=new Date(ts);return tr("{d} {m} {y}",{
 export function testCard(t?:any){
   const items=[];
   if(t.acc!=null)items.push([tr("Accuracy"),pct(Math.round(t.acc*100)+"%")]);
-  items.push([tr("Test"),tr("{dur} s test · {pool}",{dur:t.dur,pool:POOL_NAME[t.pool]?tr("pool|"+POOL_NAME[t.pool]):t.pool})],[tr("Date"),longDate(t.ts)]);
+  items.push([tr("Test"),tr("{dur} s test · {pool}",{dur:t.dur,pool:poolName(t.pool)})],[tr("Date"),longDate(t.ts)]);
   return {kind:"test",big:String(speed(t.wpm)),unit:speedUnit(),tag:tr("Typing test"),items,name:"home-row-"+Math.round(t.wpm)+"-wpm.png",alt:t.acc!=null?tr("Share card: {speed} {unit} at {acc} accuracy",{speed:speed(t.wpm),unit:speedUnit(),acc:pct(Math.round(t.acc*100)+"%")}):tr("Share card: {speed} {unit}",{speed:speed(t.wpm),unit:speedUnit()})};
 }
 export function weekCard(){
