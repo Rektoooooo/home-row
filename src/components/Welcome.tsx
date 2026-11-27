@@ -7,11 +7,16 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Btn, ENTER, Pstat } from "@/components/parts";
 import { Logo } from "@/components/Logo";
 import { reduceMotion } from "@/ui/engine";
-import { t, tn, pct, speed, speedUnit, speedTxt } from "@/i18n";
-import { useWelcome, wlCheck, wlFinish, wlPick, wlStep } from "@/ui/welcome";
+import { t, tn, pct, speed, speedUnit, speedTxt, LANG, setLang } from "@/i18n";
+import { useLang } from "@/i18n/react";
+import { CO, LESSONS } from "@/core/data";
+import { useWelcome, wlCheck, wlFinish, wlPick, wlStep, wlCourse } from "@/ui/welcome";
 
 const goals = (): [number, string][] => [[10, t("Casual")], [15, t("Regular")], [20, t("Serious")], [30, t("Intense")]];
-const stages = (): [string, string, number, string][] => [[t("stage|Home row"), t("lessons 1–6"), .2, "--f-index"], [t("stage|All letters"), t("lessons 7–17"), .5, "--f-middle"], [t("stage|Capitals, punctuation and numbers"), t("lessons 18–22"), .3, "--f-pinky"]];
+/* the three stretches of the active course: home row, the other letters, then capitals, punctuation and numbers
+   (English 1–6, 7–17, 18–22; Czech 1–6, 7–24, 25–29) */
+const span = (a: number, b: number) => t("lessons {a}–{b}", { a, b });
+const stages = (): [string, string, number, string][] => [[t("stage|Home row"), span(1, 6), .2, "--f-index"], [t("stage|All letters"), span(7, CO.allN - 1), .5, "--f-middle"], [t("stage|Capitals, punctuation and numbers"), span(CO.allN, LESSONS.length), .3, "--f-pinky"]];
 const HOURS = 12;
 const sounds = (): [string, string, string][] => [["soft", t("Soft"), t("Quiet and gentle")], ["cream", t("Creamy"), t("Deep, smooth thock")], ["click", t("Clicky"), t("Crisp and snappy")], ["type", t("Typewriter"), t("Old-school clack")]];
 const SPK = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
@@ -35,7 +40,7 @@ function kbSvg(iso: boolean) {
 function Cards({ value, className, children }: { value: string; className: string; children: React.ReactNode }) {
   return <ToggleGroup type="single" role="radiogroup" aria-labelledby="wl-title" value={value} onValueChange={() => {}} spacing={0} className={className}>{children}</ToggleGroup>;
 }
-function Card({ g, v, children, off }: { g: "layout" | "goal" | "sound"; v: string; children: React.ReactNode; off?: boolean }) {
+function Card({ g, v, children, off }: { g: "layout" | "goal" | "sound" | "course"; v: string; children: React.ReactNode; off?: boolean }) {
   return (
     <ToggleGroupItem value={v} className={off ? "wl-off" : "wl-card"}
       onClick={e => {
@@ -58,6 +63,7 @@ function Foot({ step, primary, extra, onNext }: { step: number; primary: string;
 }
 
 export function Welcome() {
+  useLang();
   const w = useWelcome(), root = useRef<HTMLDivElement>(null), title = useRef<HTMLHeadingElement>(null);
   const { open, step } = w;
   /* inert page + scroll lock + captured keys while open */
@@ -73,7 +79,10 @@ export function Welcome() {
         if (el.closest?.("button") && !radio) return;
         e.preventDefault(); (root.current?.querySelector("[data-primary]") as HTMLElement | null)?.click();
       } else if (/^Arrow(Left|Right|Up|Down)$/.test(e.key)) {
-        const rs = [...(root.current?.querySelectorAll('[role="radio"]') || [])] as HTMLElement[]; if (!rs.length) return;
+        /* arrows move within the focused group, otherwise within the step's last group (the keyboard shape on step 2) */
+        const groups = [...(root.current?.querySelectorAll('[role="radiogroup"]') || [])] as HTMLElement[];
+        const grp = (el.closest?.('[role="radiogroup"]') as HTMLElement | null) || groups[groups.length - 1];
+        const rs = [...(grp?.querySelectorAll('[role="radio"]') || [])] as HTMLElement[]; if (!rs.length) return;
         e.preventDefault();
         const cur = Math.max(0, rs.findIndex(r => r.getAttribute("aria-checked") === "true")), d = /Right|Down/.test(e.key) ? 1 : -1;
         const n = rs[(cur + d + rs.length) % rs.length]; n.click(); n.focus();
@@ -101,7 +110,13 @@ export function Welcome() {
     </>;
   } else if (step === 2) {
     body = <>
-      {h1(t("Which keyboard do you have?"))}<p className="wl-lead">{t("Look at the Enter key. It sets the shape of the keyboard on screen.")}</p>
+      {h1(t("Which keyboard do you have?"))}<p className="wl-lead">{t("Pick the layout your computer types with. Each one has its own course.")}</p>
+      <Cards value={wlCourse()} className="wl-cards wl-goals wl-course">
+        <Card g="course" v="en"><span className="big sm">U.S.</span><span className="nm">{t("English course")}</span></Card>
+        <Card g="course" v="cs-qwertz"><span className="big sm">{t("Czech QWERTZ")}</span><span className="nm">{t("Czech course")}</span></Card>
+        <Card g="course" v="cs-qwerty"><span className="big sm">{t("Czech QWERTY")}</span><span className="nm">{t("Czech course")}</span></Card>
+      </Cards>
+      <p className="wl-lead">{t("Look at the Enter key. It sets the shape of the keyboard on screen.")}</p>
       <Cards value={w.layout} className="wl-cards kbc">
         <Card g="layout" v="iso"><span dangerouslySetInnerHTML={{ __html: kbSvg(true) }} /><span className="big">ISO</span><span className="cap">{t("Tall Enter key, common in Europe")}</span></Card>
         <Card g="layout" v="ansi"><span dangerouslySetInnerHTML={{ __html: kbSvg(false) }} /><span className="big">ANSI</span><span className="cap">{t("Wide Enter key, common in the US")}</span></Card>
@@ -153,7 +168,10 @@ export function Welcome() {
       <div className="wl-top">
         <span className="brand-mark"><Logo size={30} /></span>
         <div className="wl-dots" role="img" aria-label={t("Step {step} of 6", { step })}>{[1, 2, 3, 4, 5, 6].map(i => <i key={i} className={i < step ? "done" : i === step ? "cur" : ""} />)}</div>
-        <Button variant="ghost" size="sm" onClick={() => wlFinish("learn")}>{t("button|Skip")}</Button>
+        <span className="wl-topr">
+          <Button variant="ghost" size="sm" lang={LANG === "cs" ? "en" : "cs"} onClick={() => setLang(LANG === "cs" ? "en" : "cs")}>{LANG === "cs" ? "English" : "Čeština"}</Button>
+          <Button variant="ghost" size="sm" onClick={() => wlFinish("learn")}>{t("button|Skip")}</Button>
+        </span>
       </div>
       <div className="wl-main"><div className="wl-col"><div className="wl-step" key={step}>{body}</div></div></div>
     </div>

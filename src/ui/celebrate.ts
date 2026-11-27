@@ -6,7 +6,8 @@ import { setHooks } from "@/core/hooks";
 import { notify } from "@/core/state";
 import { takeCelebrate, aico } from "@/core/rewards";
 import { rebuildKeyboards } from "./keyboard";
-import { reduceMotion } from "./engine";
+import { reduceMotion, stopExercise } from "./engine";
+import { navigate } from "@/lib/route";
 
 export const TOAST_MS = 4500;
 export interface ToastOpts { icon?: string; title: string; sub?: string }
@@ -69,6 +70,8 @@ export function installUiHooks() {
     achBooted: () => notify(),
     syncWeeklyUI: () => { weeklyVer++; weeklySubs.forEach(f => f()); },
     onRemoteApplied: () => { notify(); rebuildKeyboards(); },
+    /* another course (or Czech layout): the running exercise belongs to the old one, so stop it and start Learn fresh */
+    courseChanged: () => { stopExercise(); rebuildKeyboards(); notify(); if (!document.querySelector(".welcome")) navigate("learn"); },
   });
 }
 

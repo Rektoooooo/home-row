@@ -5,11 +5,11 @@
 import { S, setS, SC, setSC, COURSE } from "./state";
 import { sanitize, merge, stable, writeLocal, writeLocalCs, setSaveHook, takeCsPending, isObj, settingChanged } from "./store";
 import { courseFromStore } from "./course";
-import { rnd } from "./data";
+import { rnd, CO } from "./data";
 import { dateKey, addDays } from "./stats";
 import { hooks } from "./hooks";
 import { afterRemote, achBootHook, mondayOf, weekStats, aico } from "./rewards";
-import { COACH_LS, COACH_PATH, ARTIFACT_URL, clone, sanitizeCoach, allowedChars, buildSummary, buildPrompt, validateReply, askErr, HIDE_CODES, coachAsk } from "./coach";
+import { COACH_LS, COACH_PATH, ARTIFACT_URL, clone, sanitizeCoach, allowedChars, buildSummary, buildPrompt, validateReply, askErr, HIDE_CODES, coachAsk, courseTag, courseOf } from "./coach";
 import { t } from "@/i18n";
 
 /* ---- the claude.ai host object (legacy: window.claude) ---- */
@@ -122,7 +122,7 @@ export async function askClaude(){
   try{
     const allowed=allowedChars(),data=await SAMPLE.json(buildPrompt(buildSummary(),allowed),{signal:ctl.signal,modelTier:"default",cache:false});
     const v=validateReply(data,allowed);if(!v)throw {code:"invalid_json"};
-    const now=Date.now(),lesson={id:"app-"+now.toString(36),title:v.title,why:v.why,by:"app",created:now,steps:v.steps};
+    const now=Date.now(),lesson=Object.assign({id:"app-"+now.toString(36),title:v.title,why:v.why,by:"app",created:now,steps:v.steps},courseTag());
     await coachAdd(lesson,{text:v.note,at:now});
     ASK={running:false,ctl:null,err:"",ok:true};
   }catch(e:any){
@@ -133,6 +133,8 @@ export async function askClaude(){
   rerenderCoach();
 }
 export const customById=(id?:any)=>COACH.lessons.find((l:any)=>l.id===id);
+/* the Coach tab lists the active course's lessons only */
+export const courseLessons=()=>COACH.lessons.filter((l:any)=>courseOf(l)===CO.id);
 /* without an account Claude can't read the progress, so the card copies the whole progress instead of a prompt */
 export const shareLocal=()=>!getClaude()||saveStatus==="local"||saveStatus==="offline"||saveStatus==="failed";
 /* inside claude.ai the copy can be moved into the owner's account; on the website it only asks for advice and lessons */
@@ -160,7 +162,8 @@ export function syncWeeklyUI(){hooks.syncWeeklyUI()}
 export async function weeklyRun(o?:any){
   const force=!!(o&&o.force);
   if(!SAMPLE||coachOff||WK.running||(!force&&!S.settings.weekly))return;
-  const id=weekId();
+  /* one weekly lesson per course (the Czech one has its own id) */
+  const id=weekId()+(CO.id==="cs"?"-cs":"");
   if((Array.isArray(COACH_RAW.lessons)?COACH_RAW.lessons:[]).some((l?:any)=>isObj(l)&&l.id===id)){
     if(force){WK.msg=t("Done. Find it in the Coach tab.");syncWeeklyUI()}
     return;
@@ -177,9 +180,9 @@ export async function weeklyRun(o?:any){
     const prompt=buildPrompt(sum,allowed,"The note starts with a one-sentence recap of last week (time, speed, accuracy), then one piece of advice.");
     const data=await SAMPLE.json(prompt,{modelTier:"default",cache:false});
     const v=validateReply(data,allowed);if(!v)throw {code:"invalid_json"};
-    const now=Date.now(),lesson={id,title:v.title,why:v.why,by:"app",created:now,steps:v.steps};
+    const now=Date.now(),lesson=Object.assign({id,title:v.title,why:v.why,by:"app",created:now,steps:v.steps},courseTag());
     await coachMutate((raw?:any)=>{
-      const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter((l?:any)=>!(isObj(l)&&typeof l.id==="string"&&l.id.indexOf("weekly-")===0));
+      const ls=(Array.isArray(raw.lessons)?raw.lessons:[]).filter((l?:any)=>!(isObj(l)&&typeof l.id==="string"&&l.id.indexOf("weekly-")===0&&courseOf(l)===CO.id));
       ls.unshift(lesson);raw.lessons=ls.slice(0,20);raw.note={text:v.note,at:now};return raw;
     });
     WK.msg=t("Done. Find it in the Coach tab.");

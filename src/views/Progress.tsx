@@ -13,13 +13,13 @@ import { Calendar } from "@/components/Calendar";
 import { TrendChart } from "@/components/TrendChart";
 import { Achievements } from "@/components/Achievements";
 import { Keyboard } from "@/components/Keyboard";
-import { S, C } from "@/core/state";
+import { S, C, COURSE } from "@/core/state";
 import { FING, LESSONS, charInfo } from "@/core/data";
 import { dLabel, heatMap, keyAcc, keyWpm, lessonDone, minutesToday, streak, strengthOf, unlocked, usefulPair, addDays } from "@/core/stats";
 import { slowPairs, poolName } from "@/core/generate";
 import { t, tn, dec, pct, finger, speed, speedUnit, speedTxt } from "@/i18n";
 import { fmtMin, levelInfo, mondayOf, weekStats, weekTitle } from "@/core/rewards";
-import { resetAll } from "@/core/store";
+import { resetAll, resetCourse } from "@/core/store";
 import { weekCard } from "@/core/shareCard";
 import { openShare } from "@/ui/share";
 import { useProgress, useSaveStatus } from "@/lib/progress";
@@ -145,8 +145,8 @@ function Saving() {
       <SPanel eyebrow={t("heading|Save status")}>
         <p className="save-line" aria-live="polite">{status}</p>
         <div id="pr-reset-zone">
-          {ask ? <div className="confirm"><p>{t("This erases all lessons, key stats and history, here and in your account.")}</p>
-            <div className="actions"><Button variant="destructive" size="sm" type="button" onClick={() => { resetAll(); setAsk(false); }}>{t("button|Yes, erase all progress")}</Button><Button variant="ghost" size="sm" type="button" onClick={() => setAsk(false)}>{t("button|Cancel")}</Button></div></div>
+          {ask ? <div className="confirm"><p>{COURSE === "cs" ? t("This erases the Czech course's lessons, key stats and tests, here and in your account. Your streak, minutes and badges stay.") : t("This erases all lessons, key stats and history, here and in your account.")}</p>
+            <div className="actions"><Button variant="destructive" size="sm" type="button" onClick={() => { if (COURSE === "cs") resetCourse(); else resetAll(); setAsk(false); }}>{t("button|Yes, erase all progress")}</Button><Button variant="ghost" size="sm" type="button" onClick={() => setAsk(false)}>{t("button|Cancel")}</Button></div></div>
             : <Button variant="outline" size="sm" type="button" onClick={() => setAsk(true)}>{t("button|Reset progress")}</Button>}
         </div>
       </SPanel>

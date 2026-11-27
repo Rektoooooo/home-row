@@ -20,6 +20,8 @@ A free touch-typing trainer that runs in the browser. Learn to type with all ten
 - **Key sounds**: Soft, Creamy, Clicky and Typewriter, made in the browser with no audio files.
 - **Claude coach**: copy your progress into a Claude chat, get lessons written for your weakest keys, and paste the reply
   back. The lessons appear in the Coach tab.
+- **Czech**: a separate Czech course on the Czech QWERTZ or QWERTY keyboard (29 lessons with ě š č ř ž ý á í é ú ů and
+  the ´ ˇ accent keys, Czech words and texts), and the whole trainer in Czech, with speed in keystrokes per minute.
 
 Progress is saved in your browser. There is no account and no server.
 
@@ -36,6 +38,8 @@ app/index.html        trainer entry, served at /app/
 src/
   core/               framework-free logic: lessons, text generation, progress store, scoring, achievements,
                       coach, claude.ai sync, sounds, share card (golden tests in core/__golden__)
+  core/cs/            the Czech course: lessons, words, texts, block list (course.ts switches courses)
+  i18n/               app language: t() with English text as the key, the Czech dictionary, formatters
   ui/                 imperative pieces that update on every keystroke: typing engine, SVG keyboard, count-up
   components/         Header, Keyboard, TypingStage, dialogs (Settings, Welcome, Share, Move), charts
   components/ui/      shadcn/ui components

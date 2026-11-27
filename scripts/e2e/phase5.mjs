@@ -40,9 +40,11 @@ if (!SHOTS) {
     ok((await page.locator(".wl-dots").getAttribute("aria-label")) === "Step 1 of 6", "dots label");
     await page.keyboard.press("Enter"); await page.waitForTimeout(150);
     ok(await T(page, "#wl-title") === "Which keyboard do you have?", "Enter goes to step 2");
-    ok(await page.locator('[role=radio][aria-checked=true]').innerText().then((t) => t.includes("ISO")), "ISO preselected");
+    ok(await page.locator('.wl-course [role=radio][aria-checked=true]').innerText().then((t) => t.includes("U.S.")), "U.S. (English course) preselected");
+    ok(await page.locator('.kbc [role=radio][aria-checked=true]').innerText().then((t) => t.includes("ISO")), "ISO preselected");
     await page.keyboard.press("ArrowRight"); await page.waitForTimeout(100);
-    ok(await page.locator('[role=radio][aria-checked=true]').innerText().then((t) => t.includes("ANSI")), "ArrowRight selects ANSI");
+    ok(await page.locator('.kbc [role=radio][aria-checked=true]').innerText().then((t) => t.includes("ANSI")), "ArrowRight selects ANSI");
+    ok(await page.locator('.wl-course [role=radio][aria-checked=true]').innerText().then((t) => t.includes("U.S.")), "the course stays U.S.");
     await page.keyboard.press("Enter"); await page.waitForTimeout(150);
     ok(await T(page, "#wl-title") === "How much time each day?", "step 3");
     await page.getByRole("radio", { name: /20/ }).click();
@@ -135,7 +137,7 @@ if (!SHOTS) {
     await open(page);
     ok(await page.getByRole("dialog", { name: "Settings" }).isVisible(), "settings opens as a dialog named Settings");
     const sections = await page.locator(".sgroup > h3").evaluateAll((e) => e.map((x) => x.textContent));
-    ok(sections.join(",") === "Appearance,Typing,Goals,Keyboard,Lessons,Progress,Coach,About", "sections: " + sections.join(","));
+    ok(sections.join(",") === "Language and course,Appearance,Typing,Goals,Keyboard,Lessons,Progress,Coach,About", "sections: " + sections.join(","));
     ok(await checked(page, "Theme", "System") && await checked(page, "Keyboard hints", "Always") && await checked(page, "Key sound", "Off") && await checked(page, "Daily goal", "15 min") && await checked(page, "Target speed", "25") && await checked(page, "Pace caret", "Target") && await checked(page, "Keyboard shape", "ISO"), "defaults shown");
     ok(await page.getByRole("switch", { name: "Stop on mistakes" }).isChecked() && !(await page.getByRole("switch", { name: "Unlock all lessons" }).isChecked()), "switch defaults: stop on, unlock off");
     ok((await T(page, "#set-coach-off")) === "Available when Home Row runs inside Claude.", "website coach text");

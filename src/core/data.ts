@@ -83,6 +83,9 @@ export const LAYOUTS:any={iso:buildLayout("iso"),ansi:buildLayout("ansi")};
 export const IS_MAC=typeof navigator!=="undefined"&&/Mac|iPhone|iPad|iPod/.test((navigator as any).platform||navigator.userAgent||"");
 const CSL:any={};
 export const csLayout=(shape:string,variant:string)=>{const k=shape+"-"+variant;return CSL[k]||(CSL[k]=buildLayout(shape,"cs-"+variant,IS_MAC))};
+/* can ch be typed in a course (coach lessons are checked against their own course, whichever is active) */
+export const typableIn=(course:string,ch:string)=>{const shape=S&&S.settings.layout==="ansi"?"ansi":"iso";
+  return !!(course==="cs"?csLayout(shape,SC&&SC.csLayout==="qwerty"?"qwerty":"qwertz"):LAYOUTS[shape]).chars[ch]};
 export const LAY=()=>{const shape=S&&S.settings.layout==="ansi"?"ansi":"iso";return COURSE==="cs"?csLayout(shape,SC&&SC.csLayout==="qwerty"?"qwerty":"qwertz"):LAYOUTS[shape]};
 export const CM=()=>LAY().chars;
 export const kcx=(k?:any)=>(k.x+k.w/2);

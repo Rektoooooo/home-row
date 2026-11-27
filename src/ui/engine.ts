@@ -15,15 +15,18 @@ export const reduceMotion = () => typeof matchMedia !== "undefined" && matchMedi
 /* the screen currently shown: which function Esc runs outside a stage (UI.escape in legacy) */
 export const nav: { escape: null | (() => void) } = { escape: null };
 export const PACE_LIVE = new Set<any>();
-let EX: any = null, czechShown = false, lastComp: any = null, sinkEl: HTMLTextAreaElement | null = null;
+let EX: any = null, czechShown = false, csInputShown = false, csYZ = 0, lastComp: any = null, sinkEl: HTMLTextAreaElement | null = null;
 export const currentExercise = () => EX;
 
 /* course tips: only the English course shows them (the Czech course types its accents on purpose) */
 const tipText = (k: string) => k === "dead"
   ? t("Your U.S. International layout treats ' and \" as accent keys. Press Space after them to type the mark on its own; the app accepts that. Or switch to the ABC or U.S. layout while you practise.")
+  : k === "csInput" ? t("Your keyboard isn't typing Czech: the number row should give ě, š and č. Switch the input source to Czech in the input menu.")
+  : k === "csYZ" ? t("Y and Z are swapped: your computer uses the other Czech layout. Switch between QWERTZ and QWERTY in Settings so the screen matches.")
   : t("Your Czech keyboard is active. Switch the input source back to U.S. to match this course.");
 
-function hintHTML(ch: string) {
+/* armed: the accent key of a letter like ó or Č was pressed, the letter comes next */
+function hintHTML(ch: string, armed?: boolean) {
   if (ch === "\n") return '<span class="dot" style="--fc:' + fcol("RP") + '"></span>' + t("<b>{key}</b> · {finger}, new line", { key: t("key|Enter"), finger: finger("RP") });
   const i = charInfo(ch); if (!i) return "";
   const lay = LAY(); const lbl = esc(ch);
@@ -31,6 +34,12 @@ function hintHTML(ch: string) {
   const k = i.key, r = reach(k.id);
   const where = r.home ? t("home key") : t("reach {phrase} from {from}", { phrase: reachText(r.phrase), from: esc(r.from) });
   const dot = '<span class="dot" style="--fc:' + fcol(k.f) + '"></span>';
+  if (i.pre) {
+    const p = i.pre, acc = p.shift ? t("{acc} (Shift + {base})", { acc: esc(p.key.sh), base: esc(p.key.base) }) : esc(p.key.base);
+    const letter = (i.shift ? "Shift + " : "") + esc(k.base.toUpperCase());
+    if (!armed) return '<span class="dot" style="--fc:' + fcol(p.key.f) + '"></span>' + t("<b>{key}</b> · first {acc} with your {pf}, then {letter}", { key: lbl, acc, pf: finger(p.key.f, "ins"), letter });
+    return dot + t("<b>{key}</b> · now {letter} with your {finger}", { key: lbl, letter, finger: finger(k.f, "ins") });
+  }
   if (i.shift) {
     const sf = lay.byId[i.shiftId].f, v = { key: lbl, sf: finger(sf, "ins"), finger: finger(k.f), where };
     return dot + (i.shiftId === "ShiftLeft" ? t("<b>{key}</b> · hold left Shift with your {sf}, then {finger}, {where}", v) : t("<b>{key}</b> · hold right Shift with your {sf}, then {finger}, {where}", v));
@@ -129,10 +138,12 @@ export function createExercise(o: any, root: HTMLElement) {
       q("kb").setAttribute("aria-label", lb);
       q("hands").setAttribute("aria-label", i && show ? (i.fingers.length > 1 ? t("Use your {a} and your {b}", { a: finger(i.fingers[0]), b: finger(i.fingers[1]) }) : t("Use your {a}", { a: finger(i.fingers[0]) })) : t("Hands")); };
     if (E.pos >= N) { kb.set({ next: [] }); hands.set([]); hintEl.innerHTML = ""; return; }
-    const i = text[E.pos] === "\n" ? enterInfo() : charInfo(text[E.pos]), show = mode === "always" || (mode === "hesitate" && E.reveal);
+    const i0 = text[E.pos] === "\n" ? enterInfo() : charInfo(text[E.pos]), show = mode === "always" || (mode === "hesitate" && E.reveal);
+    /* a letter typed through an accent key: the accent key first, the letter once the accent is down */
+    const i = i0 && i0.pre && !E.deadArmed ? i0.pre : i0;
     lab(i, show);
-    if (!i || !show) { kb.set({ next: [] }); hands.set(text[E.pos] === " " && show ? ["TH"] : []); hintEl.innerHTML = show && i ? hintHTML(text[E.pos]) : ""; if (!i) return; return; }
-    kb.set({ next: i.ids }); hands.set(i.fingers); hintEl.innerHTML = hintHTML(text[E.pos]);
+    if (!i || !show) { kb.set({ next: [] }); hands.set(text[E.pos] === " " && show ? ["TH"] : []); hintEl.innerHTML = show && i ? hintHTML(text[E.pos], E.deadArmed) : ""; if (!i) return; return; }
+    kb.set({ next: i.ids }); hands.set(i.fingers); hintEl.innerHTML = hintHTML(text[E.pos], E.deadArmed);
   }
   function armReveal() {
     clearTimeout(revealT); E.reveal = false;
@@ -162,6 +173,11 @@ export function createExercise(o: any, root: HTMLElement) {
     }
     if (!hit) E.missAt.push(Math.floor(elapsed(now) / 1000) + 1);
     if (CO.id === "en" && !hit && /[ěščřžýáíéůú]/.test(ch) && !/[ěščřžýáíéůú]/.test(exp) && !czechShown) { czechShown = true; showTip("czech"); }
+    /* the Czech course: digits or U.S. symbols where Czech letters belong → the input source isn't Czech; y/z swapped twice → the other Czech layout */
+    if (CO.id === "cs" && !hit) {
+      if (!csInputShown && ((/[0-9]/.test(ch) && /[ěščřžýáíé+]/.test(exp)) || (ch === ";" && exp === "ů") || (ch === "[" && exp === "ú") || (ch === "'" && exp === "§"))) { csInputShown = true; showTip("csInput"); }
+      else if ((exp === "z" && ch === "y") || (exp === "y" && ch === "z") || (exp === "Z" && ch === "Y") || (exp === "Y" && ch === "Z")) { if (++csYZ === 2) showTip("csYZ"); }
+    }
     if (hit) E.correct++; keySound(hit ? (exp === " " ? "space" : "key") : "error");
     if (hit || free) {
       marks[E.pos] = hit ? (missed[E.pos] ? 2 : 1) : 3; if (free && !hit) missed[E.pos] = 1; if (marks[E.pos] === 1 || marks[E.pos] === 2) { if (free) E.ok += marks[E.pos] === 1 ? 1 : 0; }
@@ -177,6 +193,7 @@ export function createExercise(o: any, root: HTMLElement) {
   }
   E.type = function (str: string, fromComp?: boolean) {
     if (E.done || E.paused) return;
+    E.deadArmed = false;
     const arr = [...(o.code ? str.replace(/\r\n?/g, "\n") : str)].filter(c => c !== "\r" && c !== "\t" && (c !== "\n" || o.code));
     const now = performance.now();
     if (fromComp && arr.length === 1 && DEAD.includes(arr[0]) && text[E.pos] === arr[0] && text[E.pos + 1] === " " && E.pos + 1 < N) {
@@ -198,6 +215,8 @@ export function createExercise(o: any, root: HTMLElement) {
     placeCaret(); showNext(); live(performance.now());
   };
   E.flash = (code: string) => { E.lastCode = code; E.lastCodeT = performance.now(); kb.press(code); };
+  /* an accent key went down: in the Czech course the hint moves on to the letter */
+  E.deadKey = () => { if (CO.id === "cs" && !E.done && !E.deadArmed) { E.deadArmed = true; showNext(); } };
   E.deadTip = () => { if (CO.id === "en" && !S.seenTips.deadKey) { S.seenTips.deadKey = true; showTip("dead"); save(); } };
   E.pause = function () {
     if (E.done || E.paused) return;
@@ -265,10 +284,10 @@ export function installEngine(sink: HTMLTextAreaElement) {
     if (EX && !EX.done) {
       if (EX.paused) { if (!["Shift", "Control", "Alt", "Meta", "CapsLock"].includes(e.key)) { EX.resume(); focusSink(); } if (e.key === "Escape" || e.key === "Tab") e.preventDefault(); return; }
       if (e.code) EX.flash(e.code);
-      if (e.key === "Dead") EX.deadTip();
+      if (e.key === "Dead") { EX.deadTip(); EX.deadKey(); }
       if (e.key === "Escape") { e.preventDefault(); EX.restart(); return; }
       if (e.key === "Tab") { e.preventDefault(); return; }
-      if (e.key === "Backspace") { e.preventDefault(); EX.back(e.altKey); return; }
+      if (e.key === "Backspace") { e.preventDefault(); if (EX.deadArmed) { EX.deadArmed = false; EX.refreshHints(); } EX.back(e.altKey); return; }
       if (e.target !== sink && !e.metaKey && !e.ctrlKey && e.key.length === 1) focusSink();
       return;
     }
@@ -276,11 +295,12 @@ export function installEngine(sink: HTMLTextAreaElement) {
       const p = document.querySelector("#view [data-primary]") as HTMLElement | null; if (p) { e.preventDefault(); p.click(); }
     } else if (e.key === "Escape" && nav.escape) { nav.escape(); }
   };
-  sink.addEventListener("input", onInput); sink.addEventListener("compositionend", onCompEnd);
+  const onCompStart = () => { if (EX) EX.deadKey(); };
+  sink.addEventListener("input", onInput); sink.addEventListener("compositionend", onCompEnd); sink.addEventListener("compositionstart", onCompStart);
   sink.addEventListener("focus", onFocus); sink.addEventListener("blur", onBlur);
   document.addEventListener("visibilitychange", onVis); document.addEventListener("keydown", onKey);
   return () => {
-    sink.removeEventListener("input", onInput); sink.removeEventListener("compositionend", onCompEnd);
+    sink.removeEventListener("input", onInput); sink.removeEventListener("compositionend", onCompEnd); sink.removeEventListener("compositionstart", onCompStart);
     sink.removeEventListener("focus", onFocus); sink.removeEventListener("blur", onBlur);
     document.removeEventListener("visibilitychange", onVis); document.removeEventListener("keydown", onKey);
     if (sinkEl === sink) sinkEl = null;

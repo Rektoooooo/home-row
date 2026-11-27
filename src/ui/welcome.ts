@@ -1,7 +1,8 @@
 /* WELCOME state (legacy/src/app9.js: WEL, showWelcome, wlFinish, wlCheck, the status hook). A module store so the status hook
    can open the welcome before React has mounted; <Welcome> renders it. */
 import { useSyncExternalStore } from "react";
-import { S, C } from "@/core/state";
+import { S, C, SC, COURSE } from "@/core/state";
+import { switchCourse, setCsLayout } from "@/core/course";
 import { save, writeLocal } from "@/core/store";
 import { hasProgress } from "@/core/stats";
 import { statusHooks } from "@/core/sync";
@@ -28,8 +29,12 @@ export function showWelcome(step: number) {
   set({ open: true, checking: false, step, soundSeen: step === 4 ? true : W.soundSeen });
 }
 export function wlStep(step: number) { set({ step, soundSeen: step === 4 ? true : W.soundSeen }); }
-export function wlPick(g: "layout" | "goal" | "sound", v: string | number) {
-  if (g === "layout") set({ layout: v as string });
+/* the keyboard the computer types with: "en" (U.S., English course) or "cs-qwertz" / "cs-qwerty" (Czech course).
+   Applied at once, so the typing check already uses the chosen course's words */
+export const wlCourse = () => (COURSE === "cs" ? (SC.csLayout === "qwerty" ? "cs-qwerty" : "cs-qwertz") : "en");
+export function wlPick(g: "layout" | "goal" | "sound" | "course", v: string | number) {
+  if (g === "course") { if (v === "en") switchCourse("en"); else { setCsLayout(v === "cs-qwerty" ? "qwerty" : "qwertz"); switchCourse("cs"); } set({}); }
+  else if (g === "layout") set({ layout: v as string });
   else if (g === "goal") set({ goal: Number(v) });
   else { set({ sound: v as string }); if (v !== "off") soundPreview(v); }
 }

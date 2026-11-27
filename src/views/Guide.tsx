@@ -39,8 +39,19 @@ export function GuideView() {
         <List items={[t("If you used to type with a few fingers, you will be slower at first. That is normal. Most people get back to their old speed and then pass it, usually within weeks to a few months. Nobody can promise an exact timeline."), t("For reference: a 1999 study found computer users averaged about 33 words per minute when copying text. Professional typists usually type 43 to 80. A 2018 study of 168,000 people typing online found an average of about 52."), t("Words per minute counts every 5 characters, spaces included, as one word. Accuracy is the share of your key presses that were right.")]} />
         <h2>{t("6. When you get stuck")}</h2>
         <List items={[t("Your speed is limited by your slowest keys and letter pairs. Practice finds the weakest one and builds each round around it."), t("If your accuracy drops below 95%, slow down on purpose for a few rounds."), t("Plateaus are normal. When most of your keys are strong, raise the target speed by {n} in Settings.", { n: speedTxt(5) })]} />
-        <h2>{t("7. Notes for your keyboard")}</h2>
-        <List items={[t("Your Mac uses the U.S. International layout. On it, ' \" ` ~ and ^ are accent keys: they wait for the next key, so ' then e gives é. To type the mark on its own, press Space after it; this app accepts that. If it feels clumsy, switch to the ABC or U.S. layout in the input menu while you practise."), t("If a number key gives ě, š or č, your Czech keyboard is active. Switch the input source back to U.S."), t("Some labels on your Czech keyboard may not match what the U.S. layout types (for example Y and Z, or the number row). Follow the keyboard on the screen. Not looking at the keys is the point anyway.")]} />
+        {CO.id === "cs" ? <>
+          <h2>{t("7. Notes for the Czech keyboard")}</h2>
+          <List items={[
+            t("Turn on the Czech input source. Mac: System Settings → Keyboard → Text Input → Edit → + → Czech (or Czech – QWERTY). Windows: Settings → Time & language → Language & region → Czech → Language options → Add a keyboard. Then pick it in the input menu while you practise."),
+            t("QWERTZ or QWERTY: choose the same one in Settings that your computer uses. On QWERTZ the Z key sits where QWERTY has Y, and the keyboard on the screen follows your choice."),
+            t("The number row types ě š č ř ž ý á í é. For digits, hold Shift."),
+            t("The key left of Backspace is an accent key: ´ on its own, ˇ with Shift. Press it, let go, then press the letter: ´ then o gives ó, ˇ then d gives ď. For a capital, hold Shift on the letter: ˇ then Shift + C gives Č. The hint under the text shows both steps."),
+            t("A few keys differ between Mac and Windows (the key left of 1 and Shift + ¨). The course doesn't use them, so either works."),
+          ]} />
+        </> : <>
+          <h2>{t("7. Notes for your keyboard")}</h2>
+          <List items={[t("Your Mac uses the U.S. International layout. On it, ' \" ` ~ and ^ are accent keys: they wait for the next key, so ' then e gives é. To type the mark on its own, press Space after it; this app accepts that. If it feels clumsy, switch to the ABC or U.S. layout in the input menu while you practise."), t("If a number key gives ě, š or č, your Czech keyboard is active. Switch the input source back to U.S."), t("Some labels on your Czech keyboard may not match what the U.S. layout types (for example Y and Z, or the number row). Follow the keyboard on the screen. Not looking at the keys is the point anyway.")]} />
+        </>}
         <h2>{t("Sources")}</h2>
         <ul className="src">{sources().map(s => <li key={s[1]}><a href={s[1]} target="_blank" rel="noopener">{s[0]}</a></li>)}</ul>
       </article>

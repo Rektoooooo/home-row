@@ -61,7 +61,7 @@ describe("Czech formatting", () => {
     expect(list(["a", "b", "c"])).toBe("a, b a c");
     expect(finger("LI", "ins")).toBe("levým ukazováčkem");
     expect(reachText("up and in")).toBe("nahoru a dovnitř");
-    expect(t("tab|Practice")).toBe("Procvičování");
+    expect(t("tab|Practice")).toBe("Cvičení");
     expect(t("Nothing here yet, untranslated")).toBe("Nothing here yet, untranslated");
     setLangForTests("en");
     expect(tn(1, "{n} lesson", "{n} lessons")).toBe("1 lesson");

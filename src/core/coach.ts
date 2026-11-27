@@ -1,6 +1,7 @@
 /* COACH: prompt building, reply validation, paste-in JSON finding and import.  Ported from legacy/src/app8.js and app8b.js.
    All coach text is untrusted data: it only ever reaches the page through esc() or textContent. */
-import { BADDEAD, LESSONS, charInfo, isLetter, CO } from "./data";
+import { EN_BADDEAD, LESSONS, isLetter, CO, typableIn } from "./data";
+import { LANG } from "@/i18n";
 import { isObj, fin, C } from "./store";
 import { S } from "./state";
 import { strengthOf, keyWpm, keyAcc, lessonDone, nextLessonN, learnedChars, addDays, dateKey } from "./stats";
@@ -12,8 +13,10 @@ export const ARTIFACT_URL="https://claude.ai/artifact/PXFc3xE9zfiTUu6bmdxXgM";
 export const SHARE_PROMPT="Check my Home Row typing progress and make me 2 custom lessons: "+ARTIFACT_URL;
 export const ID_RE=/^[A-Za-z0-9_-]{1,40}$/;
 export const clone=(o?:any)=>JSON.parse(JSON.stringify(o));
+/* l.course: "cs" for a Czech-course lesson (checked on the Czech keyboard); anything else is an English-course lesson */
 export function cleanLesson(l?:any,allowed?:any){
   if(!isObj(l)||typeof l.id!=="string"||!ID_RE.test(l.id))return null;
+  const course=l.course==="cs"?"cs":"en";
   const title=typeof l.title==="string"?l.title.trim():"";
   if(title.length<1||title.length>60)return null;
   const why=l.why==null?"":l.why;if(typeof why!=="string"||why.length>200)return null;
@@ -23,12 +26,15 @@ export function cleanLesson(l?:any,allowed?:any){
     const s=l.steps[i];if(!isObj(s)||typeof s.text!=="string")return null;
     let name=typeof s.name==="string"?s.name.trim():"";if(name.length>30)return null;if(!name)name="Step "+(i+1);
     const text=s.text.replace(/\s+/g," ").trim();
-    if(text.length<10||text.length>400||BADDEAD.test(text))return null;
-    for(const ch of text){if(!charInfo(ch)||(allowed&&ch!==" "&&!allowed.has(ch)))return null}
+    if(text.length<10||text.length>400||(course==="en"&&EN_BADDEAD.test(text)))return null;
+    for(const ch of text){if(!typableIn(course,ch)||(allowed&&ch!==" "&&!allowed.has(ch)))return null}
     steps.push({name,text});
   }
-  return {id:l.id,title,why,by:l.by==="app"?"app":"chat",created:fin(l.created)?l.created:0,steps};
+  return Object.assign({id:l.id,title,why,by:l.by==="app"?"app":"chat",created:fin(l.created)?l.created:0,steps},course==="cs"?{course:"cs"}:{});
 }
+/* the coach lessons of the active course (untagged ones belong to the English course) */
+export const courseOf=(l?:any)=>l&&l.course==="cs"?"cs":"en";
+export const courseTag=()=>CO.id==="cs"?{course:"cs"}:{};
 export function sanitizeCoach(o?:any){
   const out:any={note:null,lessons:[],dropped:0};
   if(!isObj(o))return out;
@@ -59,11 +65,16 @@ export function buildSummary():any{
     recentTests:C().tests.slice(-3).reverse().map((t?:any)=>({seconds:t.dur,wpm:Math.round(t.wpm),accuracy:Math.round(t.acc*100)})),
     capitals:lessonDone(CO.capsN),punctuation:lessonDone(CO.punctN),numbers:CO.numN.some(lessonDone)};
 }
+/* course and language lines of the prompts (the English course in English reads exactly as before) */
+const csKb=()=>"Czech "+(CO.layout||"QWERTZ");
+const wordsKind=()=>CO.id==="cs"?"Czech words (with correct diacritics)":"English words";
+const deadRule=()=>CO.id==="en"?" Never put ' \" ` ~ or ^ directly before a vowel, c, n or y.":"";
+const langLines=()=>(CO.id==="cs"?"- The learner takes the Czech course on a "+csKb()+" keyboard.\n":"")+(LANG==="cs"?"- Write the title, why, step names and note in Czech.\n":"");
 export function buildPrompt(sum?:any,allowed?:any,extra?:any){
   return "You are a touch-typing coach inside a typing trainer. Write ONE custom practice lesson for this learner and a short tip.\n\nLearner data (JSON):\n"+JSON.stringify(sum)+"\n\nRules:\n"+
   "- Use ONLY these characters: "+[...allowed].join("")+" plus the space bar.\n"+
-  "- 3 steps. Step 1, 40-80 characters: a drill that isolates the weakest keys and letter pairs.\n  Steps 2 and 3, 80-200 characters each: real, common English words and short phrases dense in those keys and pairs.\n  No names, no profanity.\n"+
-  "- Never put ' \" ` ~ or ^ directly before a vowel, c, n or y. Single spaces only. No line breaks.\n"+
+  "- 3 steps. Step 1, 40-80 characters: a drill that isolates the weakest keys and letter pairs.\n  Steps 2 and 3, 80-200 characters each: real, common "+wordsKind()+" and short phrases dense in those keys and pairs.\n  No names, no profanity.\n"+
+  (CO.id==="en"?"- Never put ' \" ` ~ or ^ directly before a vowel, c, n or y. Single spaces only. No line breaks.\n":"- Single spaces only. No line breaks.\n")+langLines()+
   "- title: at most 40 characters. why: one sentence to the learner (\"you\"), at most 140 characters.\n"+
   "- note: 1-2 sentences of specific advice from the data, at most 300 characters.\n"+(extra?"- "+extra+"\n":"")+"\n"+
   "Reply with only JSON in exactly this shape:\n"+
@@ -73,7 +84,7 @@ export function buildPrompt(sum?:any,allowed?:any,extra?:any){
 export function validateReply(d?:any,allowed?:any){
   if(!isObj(d)||!isObj(d.lesson)||typeof d.note!=="string"||!d.note.trim())return null;
   const l=d.lesson;if(!Array.isArray(l.steps)||l.steps.length!==3)return null;
-  const c=cleanLesson({id:"x",title:l.title,why:l.why,steps:l.steps},allowed);
+  const c=cleanLesson(Object.assign({id:"x",title:l.title,why:l.why,steps:l.steps},courseTag()),allowed);
   if(!c||c.title.length>40||c.why.length>140)return null;
   return {note:d.note.trim().slice(0,300),title:c.title,why:c.why,steps:c.steps};
 }
@@ -111,7 +122,7 @@ export function importLessons(text?:any){
   o.lessons.slice(0,6).forEach((l?:any,i?:any)=>{
     if(!isObj(l)){bad++;return}
     const steps=Array.isArray(l.steps)?l.steps:[];
-    const c=cleanLesson({id:"chat-"+hash36(JSON.stringify([l.title,steps.map((s?:any)=>isObj(s)?s.text:"")])),title:l.title,why:l.why,by:"chat",created:now-i,steps});
+    const c=cleanLesson(Object.assign({id:"chat-"+hash36(JSON.stringify([l.title,steps.map((s?:any)=>isObj(s)?s.text:"")])),title:l.title,why:l.why,by:"chat",created:now-i,steps},courseTag()));
     if(c&&!added.some(a=>a.id===c.id))added.push(c);else if(!c)bad++;
   });
   const note=typeof o.note==="string"&&o.note.trim()?{text:o.note.trim().slice(0,600),at:now}:null;
@@ -123,8 +134,8 @@ export function coachAsk(){
   return "I'm learning to touch type with Home Row. Here is my progress. Tell me in 2 or 3 sentences what to work on, then write me 2 short practice lessons for my weakest keys and letter pairs.\n\n"+
   "My progress (JSON):\n"+JSON.stringify(buildSummary())+"\n\nRules for the lessons:\n"+
   "- Use only these characters: "+allowed.join("")+" and the space bar.\n"+
-  "- 3 steps per lesson. Step 1, 40-80 characters: a drill on my weakest keys and pairs. Steps 2 and 3, 80-200 characters each: real, common English words and short phrases full of those keys. No names.\n"+
-  "- Single spaces, no line breaks. Never put ' \" ` ~ or ^ directly before a vowel, c, n or y.\n"+
+  "- 3 steps per lesson. Step 1, 40-80 characters: a drill on my weakest keys and pairs. Steps 2 and 3, 80-200 characters each: real, common "+wordsKind()+" and short phrases full of those keys. No names.\n"+
+  "- Single spaces, no line breaks."+deadRule()+"\n"+(CO.id==="cs"?"- I'm taking the Czech course on a "+csKb()+" keyboard.\n":"")+(LANG==="cs"?"- Answer in Czech, and write the title, why, step names and note in Czech.\n":"")+
   "- title: up to 40 characters. why: one sentence to me, up to 140 characters. note: your advice, up to 300 characters.\n\n"+
   "End your reply with one code block that holds only this JSON, so I can paste it into the app:\n"+
   '{"homerow":1,"note":"...","lessons":[{"title":"...","why":"...","steps":[{"name":"...","text":"..."},{"name":"...","text":"..."},{"name":"...","text":"..."}]}]}';

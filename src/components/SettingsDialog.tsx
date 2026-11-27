@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Seg } from "@/views/Practice";
-import { S } from "@/core/state";
-import { resetAll, settingChanged } from "@/core/store";
+import { S, SC, COURSE } from "@/core/state";
+import { resetAll, resetCourse, settingChanged } from "@/core/store";
+import { switchCourse, setCsLayout } from "@/core/course";
 import { soundPreview } from "@/core/sound";
 import { weeklyView } from "@/ui/weekly";
 import { subscribeWeekly, weeklyVersion } from "@/ui/celebrate";
@@ -16,7 +17,7 @@ import { weeklyRun, WK, syncWeeklyUI } from "@/core/sync";
 import { currentExercise } from "@/ui/engine";
 import { rebuildKeyboards } from "@/ui/keyboard";
 import { showWelcome } from "@/ui/welcome";
-import { t, speed } from "@/i18n";
+import { t, speed, LANG, setLang, type Lang } from "@/i18n";
 import { useLang } from "@/i18n/react";
 import { useProgress, useSaveStatus } from "@/lib/progress";
 import { reroute } from "@/lib/route";
@@ -56,6 +57,20 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
         </div>
         <DialogDescription id="set-desc" className="sr-only">{t("Typing, goals, keyboard and progress settings.")}</DialogDescription>
         <div className="dlg-body">
+          <Group title={t("heading|Language and course")}>
+            <Field id="lbl-set-lang" label={t("label|App language")}>
+              <Seg label={t("label|App language")} value={LANG} options={[["en", "English"], ["cs", "Čeština"]]} onChange={v => setLang(v as Lang)} />
+            </Field>
+            <Field id="lbl-set-course" label={t("label|Course")} hint={t("Each course has its own lessons and progress. Your streak, minutes and badges are shared.")}>
+              <Seg label={t("label|Course")} value={COURSE} options={[["en", t("opt|English (U.S. keyboard)")], ["cs", t("opt|Czech (Czech keyboard)")]]} onChange={v => switchCourse(v as "en" | "cs")} />
+            </Field>
+            {COURSE === "cs" ? (
+              <Field id="lbl-set-cslayout" label={t("label|Czech keyboard")} hint={t("Pick the one your computer uses. On QWERTZ the Z key sits where QWERTY has Y.")}>
+                <Seg label={t("label|Czech keyboard")} value={SC.csLayout === "qwerty" ? "qwerty" : "qwertz"} options={[["qwertz", "QWERTZ"], ["qwerty", "QWERTY"]]} onChange={v => setCsLayout(v as "qwertz" | "qwerty")} />
+              </Field>
+            ) : null}
+          </Group>
+          <Separator />
           <Group title={t("heading|Appearance")}>
             <Field id="lbl-set-theme" label={t("label|Theme")} hint={t("System follows your Mac, or claude.ai's own setting. Saved in this browser.")}>
               <Seg label={t("label|Theme")} value={theme} options={[["system", t("opt|System")], ["light", t("opt|Light")], ["dark", t("opt|Dark")]]} onChange={v => setThemePref(v as ThemePref)} />
@@ -99,9 +114,9 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <p className="small muted save-line" id="save-status" aria-live="polite">{save}</p>
             {confirm ? (
               <div className="confirm" id="reset-confirm">
-                <p>{t("This erases all lessons, key stats and history, here and in your account.")}</p>
+                <p>{COURSE === "cs" ? t("This erases the Czech course's lessons, key stats and tests, here and in your account. Your streak, minutes and badges stay.") : t("This erases all lessons, key stats and history, here and in your account.")}</p>
                 <div className="actions">
-                  <Button variant="destructive" size="sm" id="set-reset-yes" onClick={() => { resetAll(); setConfirm(false); onOpenChange(false); currentExercise()?.refreshHints?.(); reroute(); }}>{t("button|Yes, erase everything")}</Button>
+                  <Button variant="destructive" size="sm" id="set-reset-yes" onClick={() => { if (COURSE === "cs") resetCourse(); else resetAll(); setConfirm(false); onOpenChange(false); currentExercise()?.refreshHints?.(); reroute(); }}>{t("button|Yes, erase everything")}</Button>
                   <Button variant="ghost" size="sm" id="set-reset-no" onClick={() => setConfirm(false)}>{t("button|Keep my progress")}</Button>
                 </div>
               </div>

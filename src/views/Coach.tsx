@@ -15,7 +15,7 @@ import { SHARE_PROMPT, importLessons } from "@/core/coach";
 import { isObj } from "@/core/store";
 import { setHooks } from "@/core/hooks";
 import { rewardsLesson } from "@/core/rewards";
-import { ACCT, ASK, COACH, SAMPLE, askClaude, coachMutate, coachOff, coachRemove, customById, getClaude, progressExport, shareLocal } from "@/core/sync";
+import { ACCT, ASK, COACH, SAMPLE, askClaude, coachMutate, coachOff, coachRemove, customById, courseLessons, getClaude, progressExport, shareLocal } from "@/core/sync";
 import { useProgress, useSaveStatus } from "@/lib/progress";
 import { useEscape } from "@/lib/escape";
 import { goLesson, navigate } from "@/lib/route";
@@ -95,13 +95,13 @@ function LessonCard({ l, rm, setRm, onOpen }: { l: any; rm: string; setRm: (id: 
 }
 
 function YourLessons({ ready, onOpen }: { ready: boolean; onOpen: (id: string) => void }) {
-  const [rm, setRm] = useState(""), n = COACH.lessons.length;
+  const [rm, setRm] = useState(""), mine = courseLessons(), n = mine.length;
   if (!n && !COACH.note && !COACH.dropped && !ready) return null;
   return (
     <section className="section-s">
       <div className="stage-h"><h2>{t("heading|Your lessons")}</h2>{n ? <span className="scount">{tn(n, "{n} lesson", "{n} lessons")}</span> : null}</div>
       {COACH.note ? <div className="coach-note"><span className="label">{COACH.note.at ? t("Claude's note · {date}", { date: fmtDay(COACH.note.at) }) : t("Claude's note")}</span><p>{COACH.note.text}</p></div> : null}
-      {n ? <div className="cgrid">{COACH.lessons.map((l: any) => <LessonCard key={l.id} l={l} rm={rm} setRm={setRm} onOpen={onOpen} />)}</div>
+      {n ? <div className="cgrid">{mine.map((l: any) => <LessonCard key={l.id} l={l} rm={rm} setRm={setRm} onOpen={onOpen} />)}</div>
         : <div className="empty">{getClaude() ? t("No lessons yet. Ask Claude above, or ask in any Claude chat.") : t("No lessons yet. Paste Claude's reply above and they show up here.")}</div>}
       {COACH.dropped ? <p className="small muted" style={{ marginTop: 12 }}>{tn(COACH.dropped, "{n} lesson from Claude couldn't be used on this keyboard.", "{n} lessons from Claude couldn't be used on this keyboard.")}</p> : null}
     </section>

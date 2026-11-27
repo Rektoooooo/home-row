@@ -19,7 +19,7 @@ const csData = (v: "qwertz" | "qwerty") => {
   const L = csLessons(v);
   return {
     WL: CS_WL, LESSONS: L, BG: CS_BG, BLOCK: CS_BLOCK, NB: CS_NB, DEAD: "", BADDEAD: NEVER, isLetter: (c?: any) => CS_LETTER_RE.test(c),
-    CO: courseMeta("cs", L, { letters: CS_LETTERS, home: "asdfjklů", marks: ",.-", joiner: "-", rare: "qwx", letterRe: new RegExp(CS_L), wordRe: new RegExp("^" + CS_L + "+$"),
+    CO: courseMeta("cs", L, { layout: v === "qwerty" ? "QWERTY" : "QWERTZ", letters: CS_LETTERS, home: "asdfjklů", marks: ",.-", joiner: "-", rare: "qwx", letterRe: new RegExp(CS_L), wordRe: new RegExp("^" + CS_L + "+$"),
       pairRe: new RegExp("^" + CS_L + "{2}$"), core: CS_CORE, code: false }),
   };
 };
