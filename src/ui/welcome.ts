@@ -1,8 +1,9 @@
 /* WELCOME state (legacy/src/app9.js: WEL, showWelcome, wlFinish, wlCheck, the status hook). A module store so the status hook
    can open the welcome before React has mounted; <Welcome> renders it. */
 import { useSyncExternalStore } from "react";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { save, writeLocal } from "@/core/store";
+import { hasProgress } from "@/core/stats";
 import { statusHooks } from "@/core/sync";
 import * as moveMod from "@/core/move";
 import { goLesson, navigate } from "@/lib/route";
@@ -19,7 +20,7 @@ export const getWelcome = () => W;
 export const useWelcome = (): Wel => useSyncExternalStore(f => { subs.add(f); return () => { subs.delete(f); }; }, () => W);
 
 export const wlSound0 = () => S.settings.soundPack && S.settings.soundPack !== "off" ? S.settings.soundPack : "cream";
-export const wlHasProgress = () => Object.values(S.lessons).some((l: any) => l.attempts > 0) || Object.keys(S.days).length > 0 || S.tests.length > 0 || !!S.baseline;
+export const wlHasProgress = hasProgress;
 
 export function showWelcome(step: number) {
   stopExercise();
@@ -52,7 +53,7 @@ export function wlCheck() {
 }
 export function wlCheckBack() { set({ open: true, checking: false, step: 5 }); }
 export function wlCheckDone(res: any) {
-  if (!S.baseline && res.wpm > 0) S.baseline = { wpm: Math.round(res.wpm * 10) / 10, acc: res.acc, ts: Date.now() };
+  if (!C().baseline && res.wpm > 0) C().baseline = { wpm: Math.round(res.wpm * 10) / 10, acc: res.acc, ts: Date.now() };
   set({ res: { wpm: res.wpm, acc: res.acc }, open: true, checking: false, step: 6 });
 }
 export function wlAbandonCheck() { if (W.checking) set({ checking: false }); }

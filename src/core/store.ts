@@ -1,16 +1,20 @@
 /* STORE: sanitize, merge, stable, localStorage, save().  Ported from legacy/src/app2.js. */
-import { LESSONS } from "./data";
-import { S, setS, emptyState, notify } from "./state";
+import { EN_LESSONS } from "./data";
+import { S, setS, emptyState, notify, SC, setSC, emptyCourse, COURSE } from "./state";
+import { csLessons, CS_LETTERS } from "./cs/course";
 import { hooks } from "./hooks";
-export { S, setS, emptyState, DEF, BEST0, subscribe, notify, getVersion } from "./state";
+export { S, setS, emptyState, DEF, BEST0, subscribe, notify, getVersion, C, SC, setSC, COURSE, emptyCourse } from "./state";
 
 export const fin=(x?:any)=>typeof x==="number"&&isFinite(x);
 export const isObj=(x?:any)=>x&&typeof x==="object"&&!Array.isArray(x);
 export const num=(x?:any,d?:any,lo?:any,hi?:any)=>fin(x)?Math.min(hi,Math.max(lo,x)):d;
 export const own=(o?:any,k?:any)=>Object.prototype.hasOwnProperty.call(o,k),PACKS=["off","soft","cream","click","type"];
-export function sanitize(o?:any):any{
+const CS_N=csLessons("qwertz").length,CS_PAIR=new RegExp("^["+CS_LETTERS+"]{2}$");
+/* cs: the Czech course store (same shape; its lesson count, Czech letter pairs, plus on and csLayout) */
+export function sanitize(o?:any,cs?:boolean):any{
   if(!isObj(o))return null;
-  const s=emptyState();
+  const s=cs?emptyCourse():emptyState(),nL=cs?CS_N:EN_LESSONS.length,pairRe=cs?CS_PAIR:/^[a-z]{2}$/;
+  if(cs){s.on=o.on===true;s.csLayout=o.csLayout==="qwerty"?"qwerty":"qwertz"}
   s.updatedAt=num(o.updatedAt,0,0,1e15);s.resetAt=num(o.resetAt,0,0,1e15);s.settingsAt=num(o.settingsAt,0,0,1e15);s.keysAt=num(o.keysAt,0,0,1e15);s.pairsAt=num(o.pairsAt,0,0,1e15);
   if(isObj(o.settings)){const t=o.settings,d=s.settings;
     if(["always","hesitate","hidden"].includes(t.hints))d.hints=t.hints;
@@ -25,7 +29,7 @@ export function sanitize(o?:any):any{
     if([15,30,60,120].includes(t.tDur))d.tDur=t.tDur;if(t.tPool==="c200"||t.tPool==="e950")d.tPool=t.tPool;
     if(["off","target","best"].includes(t.pace))d.pace=t.pace}
   if(isObj(o.lessons))for(const id of Object.keys(o.lessons)){const n=+id,r=o.lessons[id];
-    if(!(n>=1&&n<=LESSONS.length)||!isObj(r))continue;
+    if(!(n>=1&&n<=nL)||!isObj(r))continue;
     s.lessons[n]={done:!!r.done,stars:num(r.stars,0,0,3)|0,wpm:num(r.wpm,0,0,500),acc:num(r.acc,0,0,1),attempts:num(r.attempts,0,0,1e6)|0,last:num(r.last,0,0,1e15)}}
   if(isObj(o.custom)){let c=0;for(const id of Object.keys(o.custom)){if(c++>=100)break;const r=o.custom[id];
     if(!/^[A-Za-z0-9_-]{1,40}$/.test(id)||!isObj(r))continue;
@@ -34,7 +38,7 @@ export function sanitize(o?:any):any{
     if(k.length>8||!isObj(r)||!fin(r.n))continue;
     s.keys[k]={n:num(r.n,0,0,1e7)|0,errEma:num(r.errEma,.05,0,1)};if(fin(r.timeEma)&&r.timeEma>0)s.keys[k].timeEma=Math.min(1e5,r.timeEma)}}
   if(isObj(o.pairs)){let c=0;for(const k of Object.keys(o.pairs)){if(c++>=300)break;const r=o.pairs[k];
-    if(!/^[a-z]{2}$/.test(k)||!isObj(r)||!fin(r.n))continue;
+    if(!pairRe.test(k)||!isObj(r)||!fin(r.n))continue;
     s.pairs[k]={n:num(r.n,0,0,1e7)|0,errEma:num(r.errEma,.05,0,1)};if(fin(r.timeEma)&&r.timeEma>0)s.pairs[k].timeEma=Math.min(1e5,r.timeEma)}}
   if(isObj(o.days)){const ks=Object.keys(o.days).filter(k=>/^\d{4}-\d{2}-\d{2}$/.test(k)).sort().slice(-400);
     ks.forEach(k=>{const r=o.days[k];if(!isObj(r))return;
@@ -50,7 +54,7 @@ export function sanitize(o?:any):any{
 export function mx(a?:any,b?:any){return Math.max(a||0,b||0)}
 export function merge(a?:any,b?:any){
   if(!b)return a;
-  const r=mx(a.resetAt,b.resetAt),o=emptyState();o.resetAt=r;
+  const cs=a.course==="cs",r=mx(a.resetAt,b.resetAt),o=cs?emptyCourse():emptyState();o.resetAt=r;
   [a,b].forEach(s=>{
     for(const id of Object.keys(s.lessons)){const x=s.lessons[id];if(x.last<r)continue;const y=o.lessons[id];
       o.lessons[id]=y?{done:y.done||x.done,stars:mx(y.stars,x.stars),wpm:mx(y.wpm,x.wpm),acc:mx(y.acc,x.acc),attempts:mx(y.attempts,x.attempts),last:mx(y.last,x.last)}:Object.assign({},x)}
@@ -69,6 +73,7 @@ export function merge(a?:any,b?:any){
   {const ak=Object.keys(o.ach);if(ak.length>64){const keep=ak.sort((x,y)=>o.ach[x]-o.ach[y]).slice(0,64),na:any={};keep.forEach(k=>{na[k]=o.ach[k]});o.ach=na}}
   const dk=Object.keys(o.days).sort();dk.slice(0,Math.max(0,dk.length-400)).forEach(k=>delete o.days[k]);
   const ss=b.settingsAt>a.settingsAt?b:a;o.settings=Object.assign({},ss.settings);o.settingsAt=mx(a.settingsAt,b.settingsAt);
+  if(cs){o.on=ss.on===true;o.csLayout=ss.csLayout==="qwerty"?"qwerty":"qwertz"}
   const ka=a.keysAt>=r?a:null,kb=b.keysAt>=r?b:null;const kw=ka&&kb?(kb.keysAt>ka.keysAt?kb:ka):(ka||kb);
   if(kw){o.keys=JSON.parse(JSON.stringify(kw.keys));o.keysAt=kw.keysAt}
   const pa=a.pairsAt>=r?a:null,pb=b.pairsAt>=r?b:null;const pw2=pa&&pb?(pb.pairsAt>pa.pairsAt?pb:pa):(pa||pb);
@@ -80,12 +85,28 @@ export function stable(x?:any):any{if(Array.isArray(x))return "["+x.map(stable).
 export const LSK="homerow.v1";
 export function loadLocal(){try{const raw=localStorage.getItem(LSK);if(raw){const s=sanitize(JSON.parse(raw));if(s)return s}}catch(e){}return emptyState()}
 export function writeLocal(){try{localStorage.setItem(LSK,JSON.stringify(S))}catch(e){}}
+/* the Czech course has its own key, so a tab still running the English-only app (which rewrites homerow.v1 wholesale)
+   can never drop it */
+export const LSK_CS="homerow.cs.v1";
+export function loadLocalCs(){try{const raw=localStorage.getItem(LSK_CS);if(raw){const s=sanitize(JSON.parse(raw),true);if(s)return s}}catch(e){}return emptyCourse()}
+export function writeLocalCs(){try{localStorage.setItem(LSK_CS,JSON.stringify(SC))}catch(e){}}
 
 /* the account side (sync.ts) registers here so save() can queue a flush without a cycle */
 let saveHook: (() => void) | null = null;
 export function setSaveHook(f: (() => void) | null) { saveHook = f; }
 /* call after a finished exercise, a settings change or a reset */
-export function save() { S.updatedAt = Date.now(); writeLocal(); if (saveHook) saveHook(); notify(); }
+/* the Czech store is written while the Czech course is active, and by course switches (course.ts) */
+/* csPending: the Czech store changed and the account copy (progress-cs) needs a write; sync.ts takes it */
+let csPending = false;
+export function touchCs() { csPending = true; }
+export function takeCsPending() { const p = csPending; csPending = false; return p; }
+export function save() { S.updatedAt = Date.now(); writeLocal(); if (COURSE === "cs") { SC.updatedAt = Date.now(); writeLocalCs(); csPending = true; } if (saveHook) saveHook(); notify(); }
+/* the Czech course: only its own progress goes; days, badges and settings stay */
+export function resetCourse() {
+  const now = Date.now(), st = emptyCourse();
+  st.on = SC.on; st.csLayout = SC.csLayout; st.settingsAt = SC.settingsAt; st.modes.at = now; st.resetAt = now; st.updatedAt = now; st.keysAt = now; st.pairsAt = now;
+  setSC(st); save();
+}
 export function resetAll() {
   const now = Date.now(), st = emptyState();
   st.settings = S.settings; st.settingsAt = S.settingsAt; st.seenTips = S.seenTips; st.modes.at = now; st.resetAt = now; st.updatedAt = now; st.keysAt = now; st.pairsAt = now;

@@ -1,6 +1,6 @@
 /* Speed trend: last 30 days, practice line + test dots, crosshair and tooltip following the pointer (legacy trendChart + attachChart). */
 import { useState } from "react";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { addDays, dateKey, dayWpm, dLabel, MON } from "@/core/stats";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -13,7 +13,7 @@ export function TrendChart() {
   for (let i = 29; i >= 0; i--) days.push(addDays(today, -i));
   const prac = days.map(d => dayWpm(S.days[dateKey(d)]));
   const tests: number[][] = days.map(() => []);
-  S.tests.forEach((t: any) => { const k = dateKey(new Date(t.ts)); const i = days.findIndex(d => dateKey(d) === k); if (i >= 0) tests[i].push(t.wpm); });
+  C().tests.forEach((t: any) => { const k = dateKey(new Date(t.ts)); const i = days.findIndex(d => dateKey(d) === k); if (i >= 0) tests[i].push(t.wpm); });
   const have = prac.filter(v => v != null).length;
   const vals = [...prac.filter(v => v != null) as number[], ...tests.flat()], mxv = Math.max(20, ...vals), step = niceStep(mxv, 5), ymax = Math.ceil(mxv / step) * step;
   const X = (i: number) => L + i / 29 * PW, Y = (v: number) => T + PH - v / ymax * PH;

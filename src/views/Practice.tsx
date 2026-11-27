@@ -9,9 +9,9 @@ import { Toggle } from "@/components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Btn, Cap, ENTER, Panel, Pstat, StatusChip } from "@/components/parts";
 import { TypingStage } from "@/components/TypingStage";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { settingChanged } from "@/core/store";
-import { FING, LESSONS, charInfo, fcol, pick } from "@/core/data";
+import { FING, LESSONS, CO, charInfo, fcol, pick } from "@/core/data";
 import { TEXTS, SNIPPETS } from "@/core/texts";
 import { keyWpm, keyAcc, lessonDone, nextLessonN, poolLetters, strengthOf } from "@/core/stats";
 import * as G from "@/core/generate";
@@ -67,7 +67,7 @@ export function IncludeRow({ items }: { items: [string, string, boolean][] }) {
 
 export const paceLine = () => {
   const pc = G.paceFor("practice");
-  return pc ? <p className="small muted">Pace caret: {S.settings.pace === "best" && S.bests.practice > 0 ? "your best, " : ""}{Math.round(pc)} WPM</p> : null;
+  return pc ? <p className="small muted">Pace caret: {S.settings.pace === "best" && C().bests.practice > 0 ? "your best, " : ""}{Math.round(pc)} WPM</p> : null;
 };
 
 /* bars grow from 0 on a fresh screen */
@@ -121,7 +121,7 @@ export function AdaptiveRound({ o, onDone, onBack }: { o: any; onDone: (res: any
 function ModeRound({ o, onBack }: { o: { text: string; code?: boolean; crumb: string; done: (res: any) => void }; onBack: () => void }) {
   return <TypingStage opts={{
     text: o.text, code: !!o.code, mode: S.settings.stop ? "stop" : "free", crumb: o.crumb, pace: G.paceFor("practice") || undefined, onBack,
-    onFinish: res => { S.modes.at = Date.now(); o.done(res); liveCheck(false); },
+    onFinish: res => { C().modes.at = Date.now(); o.done(res); liveCheck(false); },
   }} />;
 }
 
@@ -148,7 +148,7 @@ export function PracticeView() {
     <div className="view-head"><h1>Practice</h1>{sub ? <p>{sub}</p> : null}</div>
     <div className="pmodes">
       <ToggleGroup type="single" aria-label="Practice mode" className="seg h-auto rounded-[10px]" value={mode} onValueChange={v => { if (v) setMode(v); }}>
-        {G.PMODES.map(m => (
+        {G.PMODES.filter(m => m[0] !== "code" || CO.code).map(m => (
           <ToggleGroupItem key={m[0]} value={m[0]} onClick={mouseBlur} className="h-auto min-w-0 hover:bg-transparent">{m[1]}{G.pmLocked(m[0]) ? <span className="lk"><Lock size={13} aria-hidden="true" /><span className="vh"> (locked)</span></span> : null}</ToggleGroupItem>
         ))}
       </ToggleGroup>
@@ -180,14 +180,14 @@ function AdaptivePage({ info, head, refresh, start }: { info: any; head: (s: str
   );
   const nr = G.nextRound(pool), focus: string = nr.focus, isPair = focus.length === 2, ci = charInfo(isPair ? focus[0] : focus), f = ci.key.f;
   const sp = G.slowPairs(6, pool);
-  const strong = pool.filter(k => { const sv = strengthOf(S.keys[k]); return sv != null && sv >= 1; }).length;
+  const strong = pool.filter(k => { const sv = strengthOf(C().keys[k]); return sv != null && sv >= 1; }).length;
   const all = strong === pool.length, nx = nextLessonN();
-  const keys = pool.map(k => ({ k, st: S.keys[k], sv: strengthOf(S.keys[k]) as number | null })).sort((a, b) => ((a.sv == null) as any) - ((b.sv == null) as any) || (a.sv as number) - (b.sv as number));
+  const keys = pool.map(k => ({ k, st: C().keys[k], sv: strengthOf(C().keys[k]) as number | null })).sort((a, b) => ((a.sv == null) as any) - ((b.sv == null) as any) || (a.sv as number) - (b.sv as number));
   const shown = showAll ? keys : keys.slice(0, 8);
   const toggles: [string, string, boolean][] = [];
-  if (st.unlockAll || lessonDone(19)) toggles.push(["pCaps", "Capitals", st.pCaps]);
-  if (st.unlockAll || lessonDone(20)) toggles.push(["pPunct", "Punctuation", st.pPunct]);
-  if (st.unlockAll || lessonDone(21) || lessonDone(22)) toggles.push(["pNums", "Numbers", st.pNums]);
+  if (st.unlockAll || lessonDone(CO.capsN)) toggles.push(["pCaps", "Capitals", st.pCaps]);
+  if (st.unlockAll || lessonDone(CO.punctN)) toggles.push(["pPunct", "Punctuation", st.pPunct]);
+  if (st.unlockAll || CO.numN.some(lessonDone)) toggles.push(["pNums", "Numbers", st.pNums]);
   const has = info && info.before != null && info.after != null, up = has && info.after >= info.before;
   const chg = has ? <span className={cn("chg", up ? "up" : "down")}>{up ? <ArrowUp aria-hidden="true" /> : <ArrowDown aria-hidden="true" />}{info.focus.toUpperCase()}: {info.before} → {info.after} WPM</span> : null;
   const fs = G.focusStat(focus), fw = keyWpm(fs), fa = keyAcc(fs);
@@ -240,10 +240,10 @@ type ModeProps = { info: any; head: (s: string) => ReactNode; refresh: () => voi
 const pmInfo = (res: any) => ({ wpm: res.wpm, acc: res.acc });
 
 function startText(t: any, p: Pick<ModeProps, "startMode" | "done">, crumb?: string) {
-  p.startMode({ text: t.x, crumb: crumb || "Practice · Real text", done: (res: any) => { S.modes.text++; G.pmMarkDone(t.t); G.setRT(null); p.done(pmInfo(res)); } });
+  p.startMode({ text: t.x, crumb: crumb || "Practice · Real text", done: (res: any) => { C().modes.text++; G.pmMarkDone(t.t); G.setRT(null); p.done(pmInfo(res)); } });
 }
 function startCode(s: any, p: Pick<ModeProps, "startMode" | "done">) {
-  p.startMode({ text: s.x, code: true, crumb: "Practice · Code", done: (res: any) => { S.modes.code++; G.setCS(null); p.done(pmInfo(res)); } });
+  p.startMode({ text: s.x, code: true, crumb: "Practice · Code", done: (res: any) => { C().modes.code++; G.setCS(null); p.done(pmInfo(res)); } });
 }
 
 function TextPage(p: ModeProps) {
@@ -335,7 +335,7 @@ function MinePage({ info, head, startMode, done }: { info: any; head: (s: string
   const start = (t: any, idx: number) => {
     const total = t.parts.length;
     startMode({ text: t.parts[idx], crumb: "Practice · Your text · Part " + (idx + 1) + " of " + total, done: (r: any) => {
-      S.modes.mine++;
+      C().modes.mine++;
       const a = G.mtList(), e = a.find((x: any) => x.id === t.id); if (e) { e.next = Math.max(e.next >= total ? 0 : e.next, idx + 1); e.at = Date.now(); G.mtSave(a); }
       done({ ...pmInfo(r), mt: { id: t.id, idx, total } });
     } });

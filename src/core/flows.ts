@@ -1,6 +1,6 @@
 /* FLOW GLUE for Practice, Test and Today's session: the data parts of legacy startRound / testDone / startSession / stepFinished
    (legacy/src/app5.js, app7.js, app11.js). No DOM here; the views in src/views render what these return. */
-import { S } from "./state";
+import { S, C } from "./state";
 import { lessonDone, poolLetters, keyWpm, applyTestResult, sumRes, wpmCalc } from "./stats";
 import { chooseFocus, focusStat, genPractice, pOpts, setPRI, niceStep, testChunk, POOL_NAME, paceFor } from "./generate";
 import { rewardsTest, liveCheck } from "./rewards";
@@ -19,7 +19,7 @@ export function prepRound(o: any = {}) {
 }
 /* what an adaptive round does when it ends: practice best, achievements, and the before/after chip data */
 export function finishRound(res: any, focus: string, before: number | null) {
-  S.bests.practice = Math.max(S.bests.practice || 0, res.wpm); liveCheck(false);
+  C().bests.practice = Math.max(C().bests.practice || 0, res.wpm); liveCheck(false);
   return { wpm: res.wpm, acc: res.acc, ms: res.ms, focus, before, after: keyWpm(focusStat(focus)) };
 }
 

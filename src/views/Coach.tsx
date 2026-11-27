@@ -7,7 +7,7 @@ import { SPanel } from "@/components/SPanel";
 import { TypingStage } from "@/components/TypingStage";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { LESSONS } from "@/core/data";
 import { MON, applyCustomResult, lessonDone, pctTxt } from "@/core/stats";
 import { SHARE_PROMPT, importLessons } from "@/core/coach";
@@ -82,7 +82,7 @@ function PastePanel() {
 
 /* ---- your lessons ---- */
 function LessonCard({ l, rm, setRm, onOpen }: { l: any; rm: string; setRm: (id: string) => void; onOpen: (id: string) => void }) {
-  const r = S.custom[l.id], date = l.created ? " · " + fmtDay(l.created) : "";
+  const r = C().custom[l.id], date = l.created ? " · " + fmtDay(l.created) : "";
   const meta = r && r.attempts ? <><Stars n={r.stars} size={14} /><span>{Math.round(r.wpm)} WPM · {Math.round(r.acc * 100)}%</span></> : <span className="muted">Not started</span>;
   const foot = rm === l.id
     ? <><span className="grow small">Remove this lesson?</span><Button variant="destructive" size="sm" onClick={() => { setRm(""); coachRemove(l.id); }}>Remove</Button><Button variant="ghost" size="sm" onClick={() => setRm("")}>Keep</Button></>

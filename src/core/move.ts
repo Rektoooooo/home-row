@@ -1,5 +1,5 @@
 /* MOVE from the old address.  Ported from legacy/src/app12.js. The DOM dialog is the UI's job; the decisions live here. */
-import { LESSONS } from "./data";
+import { EN_LESSONS as LESSONS } from "./data";
 import { S, setS } from "./state";
 import { LSK, sanitize, merge, stable, save, isObj, fin } from "./store";
 import { COACH_LS, sanitizeCoach, clone } from "./coach";

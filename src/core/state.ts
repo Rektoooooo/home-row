@@ -7,6 +7,19 @@ export let S: any = emptyState();
 /* replace the whole state object (legacy: `S=...`) */
 export function setS(next: any) { S = next; notify(); }
 
+/* COURSE: the English course keeps its progress in S (as before). The Czech course keeps lessons, keys, pairs,
+   tests, bests, baseline, modes and custom results in SC, its own store (homerow.cs.v1 / progress-cs), with the same
+   shape as S so sanitize and merge work on it. Days, badges, seen tips and settings always stay in S.
+   SC.on: the Czech course is the active one; SC.csLayout: "qwertz" | "qwerty". */
+export type CourseId = "en" | "cs";
+export function emptyCourse(): any { const s = emptyState(); s.course = "cs"; s.on = false; s.csLayout = "qwertz"; return s; }
+export let SC: any = emptyCourse();
+export function setSC(next: any) { SC = next; notify(); }
+export let COURSE: CourseId = "en";
+export function setCOURSE(c: CourseId) { COURSE = c; }
+/* the active course's progress object: read lessons, keys, pairs, tests, bests, baseline, modes and custom through C() */
+export const C = (): any => (COURSE === "cs" ? SC : S);
+
 let version = 0;
 const listeners = new Set<() => void>();
 /* call after mutating S in place (save() does it); useSyncExternalStore snapshot is getVersion() */

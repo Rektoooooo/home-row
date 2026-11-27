@@ -12,7 +12,7 @@ import { Calendar } from "@/components/Calendar";
 import { TrendChart } from "@/components/TrendChart";
 import { Achievements } from "@/components/Achievements";
 import { Keyboard } from "@/components/Keyboard";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { FING, LESSONS, charInfo } from "@/core/data";
 import { dLabel, heatMap, keyAcc, keyWpm, lessonDone, minutesToday, streak, strengthOf, unlocked, usefulPair, addDays } from "@/core/stats";
 import { slowPairs, POOL_NAME } from "@/core/generate";
@@ -62,7 +62,7 @@ function Recap() {
 
 function Tiles() {
   const m = minutesToday(), g = S.settings.goal, sk = streak(), passed = LESSONS.filter(l => lessonDone(l.n)).length;
-  let bt: any = null; S.tests.forEach((t: any) => { if (!bt || t.wpm > bt.wpm) bt = t; });
+  let bt: any = null; C().tests.forEach((t: any) => { if (!bt || t.wpm > bt.wpm) bt = t; });
   const bar = useGrown(Math.min(100, m / g * 100));
   return (
     <div className="tiles">
@@ -77,10 +77,10 @@ function Tiles() {
 function Heat() {
   const [heat, setHeat] = useState<"speed" | "acc">("speed"), ver = useProgress();
   const map = useMemo(() => heatMap(heat), [heat, ver]); // eslint-disable-line react-hooks/exhaustive-deps
-  const learned = Object.keys(S.keys).filter(k => k !== "shift" && S.keys[k].n >= 8).map(k => ({ k, s: strengthOf(S.keys[k]), st: S.keys[k] })).filter(x => x.s != null).sort((a, b) => a.s - b.s);
+  const learned = Object.keys(C().keys).filter(k => k !== "shift" && C().keys[k].n >= 8).map(k => ({ k, s: strengthOf(C().keys[k]), st: C().keys[k] })).filter(x => x.s != null).sort((a, b) => a.s - b.s);
   const sp8 = slowPairs(8);
-  const prows = Object.keys(S.pairs).filter(usefulPair).sort((x, y) => S.pairs[y].n - S.pairs[x].n).slice(0, 60);
-  const rows = Object.keys(S.keys).filter(k => k !== "shift").sort();
+  const prows = Object.keys(C().pairs).filter(usefulPair).sort((x, y) => C().pairs[y].n - C().pairs[x].n).slice(0, 60);
+  const rows = Object.keys(C().keys).filter(k => k !== "shift").sort();
   return (
     <section className="sect-gap"><h2>Key heatmap</h2>
       <div className="optrow" style={{ marginBottom: 12 }}>
@@ -95,13 +95,13 @@ function Heat() {
         <span className="pk" key={x.k}><Cap k={x.k} size="sm">{x.k.toUpperCase()}</Cap>{keyWpm(x.st) || 0} WPM · {keyAcc(x.st)}%</span>))}</div>
         : <div className="empty" style={{ marginTop: 10 }}>Type at least 8 presses of a key to see it here.</div>}
       {rows.length ? <details><summary>Show all keys as a table</summary><div className="tblwrap"><table className="tbl"><thead><tr><th>Key</th><th>Finger</th><th>Presses</th><th>WPM</th><th>Accuracy</th><th>Strength</th></tr></thead><tbody>
-        {rows.map(k => { const s = S.keys[k], i = charInfo(k), sv = strengthOf(s); return <tr key={k}><td>{k.toUpperCase()}</td><td>{i ? FING[i.key.f].n : ""}</td><td>{s.n}</td><td>{keyWpm(s) || "–"}</td><td>{keyAcc(s)}%</td><td>{sv == null ? "new" : sv.toFixed(2)}</td></tr>; })}
+        {rows.map(k => { const s = C().keys[k], i = charInfo(k), sv = strengthOf(s); return <tr key={k}><td>{k.toUpperCase()}</td><td>{i ? FING[i.key.f].n : ""}</td><td>{s.n}</td><td>{keyWpm(s) || "–"}</td><td>{keyAcc(s)}%</td><td>{sv == null ? "new" : sv.toFixed(2)}</td></tr>; })}
       </tbody></table></div></details> : null}
       <h3 style={{ marginTop: 24 }}>Slowest letter pairs</h3>
       {sp8.length ? <div className="chips">{sp8.map((x: any) => <span className="pchip" key={x.p}><b>{x.p}</b>{keyWpm(x.st)} WPM · {keyAcc(x.st)}%</span>)}</div>
         : <div className="empty" style={{ marginTop: 10 }}>Practise a little more to see your slowest letter pairs.</div>}
       {prows.length ? <details><summary>Show all letter pairs as a table</summary><div className="tblwrap"><table className="tbl"><thead><tr><th>Pair</th><th>Presses</th><th>WPM</th><th>Accuracy</th><th>Strength</th></tr></thead><tbody>
-        {prows.map(p => { const s = S.pairs[p], sv = strengthOf(s, 6); return <tr key={p}><td>{p}</td><td>{s.n}</td><td>{keyWpm(s) || "–"}</td><td>{keyAcc(s)}%</td><td>{sv == null ? "new" : sv.toFixed(2)}</td></tr>; })}
+        {prows.map(p => { const s = C().pairs[p], sv = strengthOf(s, 6); return <tr key={p}><td>{p}</td><td>{s.n}</td><td>{keyWpm(s) || "–"}</td><td>{keyAcc(s)}%</td><td>{sv == null ? "new" : sv.toFixed(2)}</td></tr>; })}
       </tbody></table></div></details> : null}
     </section>
   );
@@ -111,7 +111,7 @@ function LessonsList() {
   return (
     <section className="sect-gap"><h2>Lessons</h2>
       {LESSONS.map(l => {
-        const r = S.lessons[l.n], lock = !unlocked(l.n);
+        const r = C().lessons[l.n], lock = !unlocked(l.n);
         return (
           <button key={l.n} type="button" className="crow" aria-disabled={lock || undefined} data-n={l.n} onClick={lock ? undefined : () => goLesson(l.n)}>
             <span className="lnum">{l.n}</span><span className="t">{l.title}</span>
@@ -125,7 +125,7 @@ function LessonsList() {
 
 const OPT: Record<string, string> = { c: "capitals", p: "punctuation", n: "numbers" };
 function RecentTests() {
-  const tests = S.tests.slice(-10).reverse();
+  const tests = C().tests.slice(-10).reverse();
   return (
     <section className="sect-gap"><h2>Recent tests</h2>
       {tests.length ? <div className="tblwrap"><table className="tbl tt"><thead><tr><th>Date</th><th>Length</th><th>Words</th><th>WPM</th><th>Accuracy</th></tr></thead><tbody>

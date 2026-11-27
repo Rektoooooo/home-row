@@ -1,6 +1,6 @@
 /* REWARDS: level / XP, achievements, weekly stats.  Ported from legacy/src/app10.js. Toasts go through hooks.toast. */
-import { LESSONS } from "./data";
-import { S } from "./state";
+import { LESSONS, CO } from "./data";
+import { S, C } from "./state";
 import { own, save } from "./store";
 import { hooks } from "./hooks";
 import { lessonDone, strengthOf, dateKey, addDays, streak, minutesToday, MON, DOW } from "./stats";
@@ -45,13 +45,13 @@ export function longestRun(){
   return best;
 }
 export const passedAll=(a?:any,b?:any)=>{for(let n=a;n<=b;n++)if(!lessonDone(n))return false;return true};
-export const starsOn=(n?:any)=>(Object.values(S.lessons) as any[]).filter(l=>l.stars>=3).length>=n;
-export const testOk=(w?:any)=>S.tests.some((t?:any)=>t.wpm>=w&&t.acc>=.9);
+export const starsOn=(n?:any)=>(Object.values(C().lessons) as any[]).filter(l=>l.stars>=3).length>=n;
+export const testOk=(w?:any)=>C().tests.some((t?:any)=>t.wpm>=w&&t.acc>=.9);
 export const ACH=[
   {id:"first-lesson",title:"First lesson",desc:"Pass lesson 1",cat:"lesson",icon:"key",test:()=>lessonDone(1)},
   {id:"home-row",title:"Home row",desc:"Pass lessons 1 to 6",cat:"lesson",icon:"keys",test:()=>passedAll(1,6)},
-  {id:"all-letters",title:"All letters",desc:"Pass lessons 1 to 17",cat:"lesson",icon:"flag",test:()=>passedAll(1,17)},
-  {id:"course",title:"Course complete",desc:"Pass all "+LESSONS.length+" lessons",cat:"lesson",icon:"trophy",test:()=>passedAll(1,LESSONS.length)},
+  {id:"all-letters",title:"All letters",get desc(){return "Pass lessons 1 to "+(CO.allN-1)},cat:"lesson",icon:"flag",test:()=>passedAll(1,CO.allN-1)},
+  {id:"course",title:"Course complete",get desc(){return "Pass all "+LESSONS.length+" lessons"},cat:"lesson",icon:"trophy",test:()=>passedAll(1,LESSONS.length)},
   {id:"three-stars",title:"Three stars",desc:"Get 3 stars on a lesson",cat:"lesson",icon:"star",test:()=>starsOn(1)},
   {id:"star-collector",title:"Star collector",desc:"Get 3 stars on 10 lessons",cat:"lesson",icon:"stars",test:()=>starsOn(10)},
   {id:"streak-3",title:"3-day streak",desc:"Practise 3 days in a row",cat:"streak",icon:"flame",test:()=>longestRun()>=3},
@@ -61,14 +61,14 @@ export const ACH=[
   {id:"wpm-30",title:"30 WPM",desc:"A test at 30 WPM or more, with 90% accuracy or better",cat:"speed",icon:"bolt",test:()=>testOk(30)},
   {id:"wpm-40",title:"40 WPM",desc:"A test at 40 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(40)},
   {id:"wpm-60",title:"60 WPM",desc:"A test at 60 WPM or more, with 90% accuracy or better",cat:"speed",icon:"rocket",test:()=>testOk(60)},
-  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>S.tests.some((t?:any)=>t.dur>=30&&t.acc>=.98)},
-  {id:"home-strong",title:"Home row mastered",desc:"Make every home row key strong",cat:"accuracy",icon:"shield",test:()=>[..."asdfjkl;"].every(k=>{const v=strengthOf(S.keys[k]);return v!=null&&v>=1})},
-  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!S.baseline&&S.tests.some((t?:any)=>t.wpm>S.baseline.wpm&&t.acc>=.95)},
+  {id:"sharp",title:"Sharpshooter",desc:"A test of 30 s or longer with 98% accuracy or better",cat:"accuracy",icon:"target",test:()=>C().tests.some((t?:any)=>t.dur>=30&&t.acc>=.98)},
+  {id:"home-strong",title:"Home row mastered",desc:"Make every home row key strong",cat:"accuracy",icon:"shield",test:()=>[...CO.home as string].every(k=>{const v=strengthOf(C().keys[k]);return v!=null&&v>=1})},
+  {id:"faster",title:"Faster than before",desc:"Beat your starting speed in a test, with 95% accuracy or better",cat:"speed",icon:"chevron",test:()=>!!C().baseline&&C().tests.some((t?:any)=>t.wpm>C().baseline.wpm&&t.acc>=.95)},
   {id:"goal-5",title:"Five good days",desc:"Reach your daily goal on 5 days",cat:"streak",icon:"calendar",test:()=>(Object.values(S.days) as any[]).filter(d=>d.ms>=S.settings.goal*60000).length>=5},
   {id:"level-5",title:"Level 5",desc:"Reach level 5",cat:"special",icon:"chevron",test:()=>levelInfo().level>=5},
   {id:"level-10",title:"Level 10",desc:"Reach level 10",cat:"special",icon:"chevron",test:()=>levelInfo().level>=10},
-  {id:"first-text",title:"First real text",desc:"Finish a text in Practice",cat:"special",icon:"page",test:()=>S.modes.text>=1},
-  {id:"first-code",title:"First code",desc:"Finish a code snippet in Practice",cat:"special",icon:"brackets",test:()=>S.modes.code>=1}
+  {id:"first-text",title:"First real text",desc:"Finish a text in Practice",cat:"special",icon:"page",test:()=>C().modes.text>=1},
+  {id:"first-code",title:"First code",desc:"Finish a code snippet in Practice",cat:"special",icon:"brackets",test:()=>C().modes.code>=1}
 ];
 export const achBy=(id?:any):any=>ACH.find(a=>a.id===id);
 export const medal=(a?:any,sz?:any,ic?:any)=>'<span class="medal" style="--ac:var('+ACOL[a.cat]+');width:'+sz+'px;height:'+sz+'px">'+aico(a.icon,ic)+'</span>';
@@ -120,7 +120,7 @@ export const mondayOf=(d?:any)=>addDays(d,-((d.getDay()+6)%7));
 export function weekStats(mon?:any){
   let ms=0,chars=0,pr=0,co=0;
   for(let i=0;i<7;i++){const d=S.days[dateKey(addDays(mon,i))];if(d){ms+=d.ms;chars+=d.chars;pr+=d.presses;co+=d.correct}}
-  const t0=mon.getTime(),t1=addDays(mon,7).getTime(),ts=S.tests.filter((t?:any)=>t.ts>=t0&&t.ts<t1);
+  const t0=mon.getTime(),t1=addDays(mon,7).getTime(),ts=C().tests.filter((t?:any)=>t.ts>=t0&&t.ts<t1);
   return {ms,min:ms/60000,wpm:ms>0&&chars>0?chars/5/(ms/60000):null,acc:pr>0?co/pr:null,tests:ts.length,best:ts.reduce((m?:any,t?:any)=>Math.max(m,t.wpm),0),has:ms>0||ts.length>0};
 }
 export function fmtMin(m?:any){

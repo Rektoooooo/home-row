@@ -1,5 +1,5 @@
 /* SHARE CARD + LOGO geometry.  Ported verbatim from legacy/src/app9.js (logo) and app10.js (canvas drawing). No tests. */
-import { S } from "./state";
+import { S, C } from "./state";
 import { dateKey, MON } from "./stats";
 import { POOL_NAME } from "./generate";
 import { mondayOf, weekStats } from "./rewards";
@@ -108,6 +108,6 @@ export function weekCard(){
   return {kind:"week",big:String(Math.round(c.min)),unit:"MIN",tag:"This week",items,name:"home-row-week-"+dateKey(mon)+".png",alt:"Share card: "+Math.round(c.min)+" minutes of practice this week"};
 }
 export function bestCard(){
-  const d=S.settings.tDur,w=S.bests["test"+d]||0,t=S.tests.filter((x?:any)=>x.dur===d).sort((x?:any,y?:any)=>y.wpm-x.wpm)[0];
+  const d=S.settings.tDur,w=C().bests["test"+d]||0,t=C().tests.filter((x?:any)=>x.dur===d).sort((x?:any,y?:any)=>y.wpm-x.wpm)[0];
   return testCard({wpm:w,acc:t?t.acc:null,dur:d,pool:t?t.pool:S.settings.tPool,ts:t?t.ts:Date.now()});
 }

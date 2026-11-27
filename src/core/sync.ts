@@ -2,8 +2,9 @@
    Ported from legacy/src/app2.js (connectAccount, flush, status), app8.js (coach doc, askClaude) and app8b.js (weekly coach).
    Written against an injected `claude`-like object (setClaude) so it can be tested; without one it falls back to window.claude.
    DOM work of the legacy code goes through `hooks` (hooks.ts). */
-import { S, setS } from "./state";
-import { sanitize, merge, stable, writeLocal, setSaveHook, isObj, settingChanged } from "./store";
+import { S, setS, SC, setSC, COURSE } from "./state";
+import { sanitize, merge, stable, writeLocal, writeLocalCs, setSaveHook, takeCsPending, isObj, settingChanged } from "./store";
+import { courseFromStore } from "./course";
 import { rnd } from "./data";
 import { dateKey, addDays } from "./stats";
 import { hooks } from "./hooks";
@@ -16,18 +17,20 @@ export function setClaude(c: any) { injected = c; hasInjected = true; }
 export function getClaude(): any { return hasInjected ? injected : (typeof window !== "undefined" ? (window as any).claude : undefined); }
 
 /* ---- save status and account sync ---- */
-export let saveStatus:any="connecting",acct:any=null,writing=false,dirty=false,retried=false,statusHooks:any[]=[];
+/* acct: the progress doc (English course, shared days and badges); acctCs: progress-cs (the Czech course) */
+export let saveStatus:any="connecting",acct:any=null,acctCs:any=null,writing=false,dirty=false,dirtyCs=false,retried=false,statusHooks:any[]=[];
 export const STATUS_TXT={connecting:"Connecting…",local:"Saved in this browser only",offline:"Saved in this browser only (offline)",account:"Saved to your claude.ai account",failed:"Saved in this browser only (account unavailable)"};
 export function setSaveStatus(s?:any){saveStatus=s;statusHooks.forEach(f=>{try{f(s)}catch(e){}})}
 /* store.save() calls this: queue an account write when an account is attached */
-setSaveHook(()=>{if(acct){dirty=true;flush()}});
+setSaveHook(()=>{if(acct){dirty=true;if(takeCsPending()&&acctCs)dirtyCs=true;flush()}});
 export async function flush(){
-  if(writing||!acct||!dirty)return;
-  writing=true;dirty=false;
-  try{await acct.set(JSON.parse(JSON.stringify(S)));retried=false}
+  if(writing||!acct||(!dirty&&!dirtyCs))return;
+  const doS=dirty,doC=dirtyCs&&!!acctCs;
+  writing=true;dirty=false;dirtyCs=false;
+  try{if(doS)await acct.set(JSON.parse(JSON.stringify(S)));if(doC)await acctCs.set(JSON.parse(JSON.stringify(SC)));retried=false}
   catch(e:any){
     const code=String((e&&(e.code||e.name))||"")+" "+String((e&&e.message)||"");
-    if(/unavailable/i.test(code)&&!retried){retried=true;dirty=true;writing=false;setTimeout(flush,1000+rnd(2000));return}
+    if(/unavailable/i.test(code)&&!retried){retried=true;dirty=dirty||doS;dirtyCs=dirtyCs||doC;writing=false;setTimeout(flush,1000+rnd(2000));return}
     if(/invalid_argument|revoked|not_granted/i.test(code)){acct=null;setSaveStatus("failed")}
     else if(/unavailable/i.test(code)){setSaveStatus("offline")}
   }
@@ -48,8 +51,18 @@ export async function connectAccount(){
     const remote=snap&&snap.exists?sanitize(snap.data()):null;
     const merged=merge(S,remote);
     setS(merged);writeLocal();acct=ref;
+    /* the Czech course doc: merged the same way; it also says which course is active */
+    const refCs=db.doc("data/users/"+id+"/progress-cs");
+    let snapCs:any=undefined;try{snapCs=await Promise.race([refCs.get(),timeout(10000)])}catch(e){}
+    if(snapCs!==undefined){
+      const rc=snapCs&&snapCs.exists?sanitize(snapCs.data(),true):null,mc=merge(SC,rc);
+      setSC(mc);writeLocalCs();acctCs=refCs;
+      if((SC.updatedAt>0||SC.settingsAt>0)&&(!rc||stable(mc)!==stable(rc)))dirtyCs=true;
+      if((COURSE==="cs")!==!!SC.on){courseFromStore();hooks.courseChanged&&hooks.courseChanged()}
+    }
     onRemoteApplied();
     if(S.updatedAt>0&&(!remote||stable(merged)!==stable(remote))){dirty=true;flush()}
+    if(dirtyCs)flush();
     setSaveStatus("account");
   }catch(e){setSaveStatus(getClaude()?"offline":"local")}
 }
@@ -186,7 +199,7 @@ export function installCoreHooks() {
 }
 /* back to a pristine module state (tests) */
 export function resetSyncForTests() {
-  saveStatus = "connecting"; acct = null; writing = false; dirty = false; retried = false; statusHooks.length = 0;
+  saveStatus = "connecting"; acct = null; acctCs = null; writing = false; dirty = false; dirtyCs = false; retried = false; statusHooks.length = 0;
   ACCT = null; SAMPLE = null; COACH_RAW = {}; COACH = { note: null, lessons: [], dropped: 0 }; coachQ = Promise.resolve(); coachOff = false; COACH_SNAP = false;
   ASK = { running: false, ctl: null, err: "", ok: false }; WK.running = false; WK.fired = false; WK.msg = "";
   hasInjected = false; injected = undefined;

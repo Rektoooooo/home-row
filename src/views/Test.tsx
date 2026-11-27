@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Btn, ENTER, Panel, Pstat } from "@/components/parts";
 import { TypingStage } from "@/components/TypingStage";
-import { S } from "@/core/state";
+import { S, C } from "@/core/state";
 import { settingChanged } from "@/core/store";
 import { dLabel, pctTxt } from "@/core/stats";
 import { POOL_NAME, paceFor, testChunk, recordTest, testChart, testOptsFromSettings, type TestCfg } from "@/core/flows";
@@ -98,14 +98,14 @@ export function TestView() {
 
   const setDur = (d: number) => { S.settings.tDur = d; settingChanged(); };
   const tiles = [15, 30, 60, 120].map(d => {
-    const b = Math.round(S.bests["test" + d] || 0), t = S.tests.filter((x: any) => x.dur === d).sort((x: any, y: any) => y.wpm - x.wpm)[0];
+    const b = Math.round(C().bests["test" + d] || 0), t = C().tests.filter((x: any) => x.dur === d).sort((x: any, y: any) => y.wpm - x.wpm)[0];
     return (
       <button key={d} type="button" className="best" aria-pressed={st.tDur === d} onClick={e => { mouseBlur(e); setDur(d); }}>
         <span className="label">{d} s</span><span className="num">{b || "–"}</span><span className="sub">{!b ? "No test yet" : t ? Math.round(t.acc * 100) + "% accuracy" : ""}</span>
       </button>
     );
   });
-  const rows = S.tests.slice(-5).reverse();
+  const rows = C().tests.slice(-5).reverse();
   return (
     <div>
       <Screen kind="idle" />
@@ -123,7 +123,7 @@ export function TestView() {
         </HPanel>
         <HPanel eyebrow="Your results" foot={rows.length ? <Button variant="ghost" asChild><a href="#progress">See your speed trend</a></Button> : undefined}>
           <div className="bests">{tiles}</div>
-          {(S.bests["test" + st.tDur] || 0) > 0 ? <div><Btn variant="ghost" size="sm" onClick={() => openShare(bestCard())}><ArrowUp size={14} aria-hidden="true" />Share best · {st.tDur} s</Btn></div> : null}
+          {(C().bests["test" + st.tDur] || 0) > 0 ? <div><Btn variant="ghost" size="sm" onClick={() => openShare(bestCard())}><ArrowUp size={14} aria-hidden="true" />Share best · {st.tDur} s</Btn></div> : null}
           <div><span className="label">Recent tests</span>
             {rows.length ? (
               <div className="tblwrap"><table className="tbl tt rt"><thead><tr><th>Date</th><th>Time</th><th>Words</th><th>WPM</th><th>Accuracy</th></tr></thead><tbody>

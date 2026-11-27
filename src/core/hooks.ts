@@ -7,5 +7,6 @@ export const hooks: Record<string, any> = {
   syncWeeklyUI: () => {},           // weekly coach switch / message changed
   renderRing: () => {},             // today ring / streak flame
   achBooted: () => {},              // badges were granted silently at load: refresh Progress
+  courseChanged: () => {},          // the active course or the Czech layout changed (account load): rebuild keyboards
 };
 export function setHooks(h: Record<string, any>) { Object.assign(hooks, h); }

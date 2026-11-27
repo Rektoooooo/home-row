@@ -1,7 +1,7 @@
 /* COACH: prompt building, reply validation, paste-in JSON finding and import.  Ported from legacy/src/app8.js and app8b.js.
    All coach text is untrusted data: it only ever reaches the page through esc() or textContent. */
-import { BADDEAD, LESSONS, charInfo, isLetter } from "./data";
-import { isObj, fin } from "./store";
+import { BADDEAD, LESSONS, charInfo, isLetter, CO } from "./data";
+import { isObj, fin, C } from "./store";
 import { S } from "./state";
 import { strengthOf, keyWpm, keyAcc, lessonDone, nextLessonN, learnedChars, addDays, dateKey } from "./stats";
 import { slowPairs } from "./generate";
@@ -44,19 +44,19 @@ export function sanitizeCoach(o?:any){
 export function allowedChars(){
   const set:Set<any>=new Set();
   LESSONS.forEach(L=>{if(lessonDone(L.n))L.keys.forEach((k?:any)=>set.add(k))});
-  if(lessonDone(19))[...set].filter(isLetter).forEach(c=>set.add(c.toUpperCase()));
+  if(lessonDone(CO.capsN))[...set].filter(isLetter).forEach(c=>set.add(c.toUpperCase()));
   return set;
 }
 export function buildSummary():any{
-  const keys=Object.keys(S.keys).filter(k=>k!=="shift"&&S.keys[k].n>=8&&strengthOf(S.keys[k])!=null)
-    .sort((a,b)=>strengthOf(S.keys[a])-strengthOf(S.keys[b])).slice(0,6)
-    .map(k=>({key:k,wpm:keyWpm(S.keys[k])||0,accuracy:keyAcc(S.keys[k]),presses:S.keys[k].n}));
+  const keys=Object.keys(C().keys).filter(k=>k!=="shift"&&C().keys[k].n>=8&&strengthOf(C().keys[k])!=null)
+    .sort((a,b)=>strengthOf(C().keys[a])-strengthOf(C().keys[b])).slice(0,6)
+    .map(k=>({key:k,wpm:keyWpm(C().keys[k])||0,accuracy:keyAcc(C().keys[k]),presses:C().keys[k].n}));
   const days=[];for(let i=6;i>=0;i--){const d=addDays(new Date(),-i),r=S.days[dateKey(d)];days.push({date:dateKey(d),minutes:r?Math.round(r.ms/6000)/10:0,wpm:r&&r.ms>=60000?Math.round(r.chars/5/(r.ms/60000)):0})}
   return {targetWpm:S.settings.target,lessonsPassed:LESSONS.filter(l=>lessonDone(l.n)).length,nextLesson:nextLessonN(),
     learnedKeys:[...learnedChars()].join(""),weakestKeys:keys,
     slowestPairs:slowPairs(6).map(x=>({pair:x.p,wpm:keyWpm(x.st)||0,accuracy:keyAcc(x.st)})),last7Days:days,
-    recentTests:S.tests.slice(-3).reverse().map((t?:any)=>({seconds:t.dur,wpm:Math.round(t.wpm),accuracy:Math.round(t.acc*100)})),
-    capitals:lessonDone(19),punctuation:lessonDone(20),numbers:lessonDone(21)||lessonDone(22)};
+    recentTests:C().tests.slice(-3).reverse().map((t?:any)=>({seconds:t.dur,wpm:Math.round(t.wpm),accuracy:Math.round(t.acc*100)})),
+    capitals:lessonDone(CO.capsN),punctuation:lessonDone(CO.punctN),numbers:CO.numN.some(lessonDone)};
 }
 export function buildPrompt(sum?:any,allowed?:any,extra?:any){
   return "You are a touch-typing coach inside a typing trainer. Write ONE custom practice lesson for this learner and a short tip.\n\nLearner data (JSON):\n"+JSON.stringify(sum)+"\n\nRules:\n"+

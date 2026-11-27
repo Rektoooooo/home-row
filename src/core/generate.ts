@@ -1,9 +1,10 @@
 /* GENERATE: lesson text, review, capitals/punctuation/numbers, practice rounds, test text, real text / code / your-text helpers.
    Ported line for line from legacy/src/app1.js, app5.js, app11.js so the order of Math.random calls is identical. */
-import { WORDS_CORE } from "./words";
 import { TEXTS, SNIPPETS } from "./texts";
-import { WL, BADDEAD, BLOCK, BG, LESSONS, STEP_NAMES, isLetter, rnd, pick, pickF, cap, wpick, FING, charInfo, homeCh, NB } from "./data";
-import { S } from "./state";
+import { CS_TEXTS } from "./cs/texts";
+import { CS_SENT, CS_UNITS } from "./cs/extra";
+import { WL, EN_WL, BADDEAD, BLOCK, BG, LESSONS, STEP_NAMES, isLetter, rnd, pick, pickF, cap, wpick, FING, charInfo, homeCh, NB, CO } from "./data";
+import { S, C } from "./state";
 import { own } from "./store";
 import { strengthOf, weakW, lessonDone, poolLetters, usefulPair, keyWpm } from "./stats";
 
@@ -43,17 +44,17 @@ export function ctx(n?:any){
   const L=LESSONS[n-1],known=new Set();
   for(let i=0;i<n-1;i++)LESSONS[i].keys.forEach((k?:any)=>known.add(k));
   const all=new Set([...known,...L.keys]);
-  const letters=n>=19?"abcdefghijklmnopqrstuvwxyz".split(""):[...all].filter(isLetter);
+  const letters=n>=CO.capsN?[...CO.letters]:[...all].filter(isLetter);
   return {L,n,known,newK:L.keys,all,letters,newLetters:L.keys.filter(isLetter)};
 }
 export function decorate(t?:any,c?:any,minNew?:any){
-  const P=",.;/",has=(s?:any)=>/[,.;/]/.test(s);
+  const P=CO.marks,J=CO.joiner,has=(s?:any)=>[...P].some(m=>s.includes(m));
   const newP=c.newK.filter((k?:any)=>P.includes(k)),knownP=[...c.known].filter(k=>P.includes(k)&&!c.newK.includes(k));
   const marks:any[]=[];
   newP.forEach((k?:any)=>{for(let i=0;i<minNew;i++)marks.push(k)});
   knownP.forEach(k=>{if(Math.random()<.7)marks.push(k)});
-  marks.filter(m=>m!=="/").forEach(m=>{const idx:any[]=[];t.forEach((w?:any,i?:any)=>{if(!has(w))idx.push(i)});if(idx.length)t[pick(idx)]+=m});
-  marks.filter(m=>m==="/").forEach(()=>{const idx=[];for(let i=0;i<t.length-1;i++)if(!has(t[i])&&!has(t[i+1]))idx.push(i);if(idx.length){const i=pick(idx);t[i]=t[i]+"/"+t[i+1];t.splice(i+1,1)}});
+  marks.filter(m=>m!==J).forEach(m=>{const idx:any[]=[];t.forEach((w?:any,i?:any)=>{if(!has(w))idx.push(i)});if(idx.length)t[pick(idx)]+=m});
+  marks.filter(m=>m===J).forEach(()=>{const idx=[];for(let i=0;i<t.length-1;i++)if(!has(t[i])&&!has(t[i+1]))idx.push(i);if(idx.length){const i=pick(idx);t[i]=t[i]+J+t[i+1];t.splice(i+1,1)}});
   return t;
 }
 export function drill(c?:any,len?:any){
@@ -76,7 +77,7 @@ export function combine(c?:any){
 }
 export function wordText(c?:any,len?:any,review?:any){
   const nl=c.newLetters,set=new Set(c.letters);
-  let cand=realPool(set,2,c.n>=13?9:8).slice();
+  let cand=realPool(set,2,c.n>=CO.longN?9:8).slice();
   if(cand.length<15){const have=new Set(cand);let g=0;
     while(cand.length<15&&g++<120){const w=pw(c.letters,{min:3,max:5,must:nl.length?pick(nl):null});if(!have.has(w)){have.add(w);cand.push(w)}}}
   const withNew=nl.length?cand.filter((w?:any)=>nl.some((k?:any)=>w.includes(k))):[];
@@ -89,7 +90,8 @@ export function wordText(c?:any,len?:any,review?:any){
   };
   const t=fill(next,len,40);
   /* every key of the lesson shows up at least once: a few keys (J above all) have almost no words */
-  c.letters.filter((k?:any)=>!t.some(w=>w.includes(k))).forEach((k?:any)=>{
+  /* rare letters (Czech q, w, x: a handful of loanwords) are only forced into their own lesson */
+  c.letters.filter((k?:any)=>!t.some(w=>w.includes(k))&&(!CO.rare.includes(k)||nl.includes(k))).forEach((k?:any)=>{
     const pool=cand.filter((w?:any)=>w.includes(k)),w=pool.length?pick(pool):pw(c.letters,{min:3,max:5,must:k});
     t.splice(1+rnd(t.length),0,w);
   });
@@ -108,6 +110,9 @@ export function gen19(s?:any){
     return t.join(" ");
   }
   const short=WL.filter(w=>w.length>=2&&w.length<=6);
+  if(s===2&&CO.id==="cs"){/* Czech: about a third of the capitals start with an accented letter (ˇ or ´, then Shift + the letter) */
+    const acc=short.filter(w=>/^[čďěňřšťžúýáíéó]/.test(w));
+    return fill(()=>Math.random()<.35?cap(pickF(acc)):(()=>{const w=pickF(short);return Math.random()<.5?cap(w):w})(),60,12).join(" ")}
   if(s===2)return fill(()=>{const w=pickF(short);return Math.random()<.5?cap(w):w},60,12).join(" ");
   let out="";
   while(out.length<90){
@@ -121,8 +126,8 @@ export const CONTR=["don't","it's","I'm","we'll","you're","I'd","I've","can't","
 export const VERBS=["see","find","type","read","make","take","keep","try","hold","check"];
 export const ADJ=["slow","steady","calm","clear","quick","light"];
 export const HYPH=["well-known","long-term","short-term","quick-start","real-life","ten-minute","step-by-step","easy-going"];
-export const QWORDS=WL.filter(w=>w.length>=3&&w.length<=6&&!/^[aeiouycn]/.test(w)).slice(0,300);
-export const W20=WL.filter(w=>w.length>=3&&w.length<=6).slice(0,300);
+export const QWORDS=EN_WL.filter(w=>w.length>=3&&w.length<=6&&!/^[aeiouycn]/.test(w)).slice(0,300);
+export const W20=EN_WL.filter(w=>w.length>=3&&w.length<=6).slice(0,300);
 export function sent20(kind?:any){
   const w=()=>pickF(W20),q=()=>pickF(QWORDS);
   switch(kind){
@@ -134,8 +139,14 @@ export function sent20(kind?:any){
     default:return pick(["Remember: "+w()+", "+w()+", "+w()+".","Tip: "+pick(VERBS)+" "+w()+" and "+w()+".","Goal: "+pick(ADJ)+" and "+pick(ADJ)+"."]);
   }
 }
+/* the Czech course: whole sentences (Czech grammar does not take slot-filled templates) */
+export function gen20cs(s?:any){
+  const kinds=s===2?["ques","excl","colon"]:["quote","paren","ques","excl"];
+  return kinds.map(k=>pick((CS_SENT as any)[k])).join(" ");
+}
 export function gen20(s?:any,c?:any){
   if(s===1)return drill(c,45);
+  if(CO.id==="cs")return gen20cs(s);
   const kinds=s===2?["ques","excl","contr"]:["hyph","quote","colon","contr"];
   return kinds.map(sent20).join(" ");
 }
@@ -145,7 +156,7 @@ export function genNum(n?:any,s?:any,c?:any){
   if(s===1)return drill(c,45);
   const ds=s===2?c.newK:[...new Set([...c.known,...c.newK].filter(k=>/\d/.test(k)))];
   const tok=()=>{const len=1+rnd(4);let x="";for(let i=0;i<len;i++){let d=pick(ds);if(i===0&&len>1&&d==="0")d=pick(ds.filter((z?:any)=>z!=="0")||ds);x+=d}
-    return Math.random()<.85?x+" "+pick(NOUNS):x};
+    return Math.random()<.85?x+" "+pick(CO.id==="cs"?CS_UNITS:NOUNS):x};
   return fill(tok,s===2?60:90,12).join(" ");
 }
 export function genStep(n?:any,s?:any){
@@ -171,13 +182,13 @@ export function extras(toks?:any,o?:any){
   if(o.nums)for(let i=0;i<out.length;i++)if(Math.random()<.1){const len=1+rnd(4);let x="";for(let j=0;j<len;j++)x+=pick(digs.split(""));out[i]=x}
   if(o.punct)for(let i=0;i<out.length;i++){
     const w=out[i];let r=Math.random();
-    if(r<.03&&o.contr)out[i]=pick(CONTR);
-    else if(r<.06&&/^[a-z]+$/.test(w)&&!/^[aeiouycn]/.test(w))out[i]='"'+w+'"';
+    if(r<.03&&o.contr&&CO.id==="en")out[i]=pick(CONTR);
+    else if(r<.06&&CO.wordRe.test(w)&&(CO.id!=="en"||!/^[aeiouycn]/.test(w)))out[i]='"'+w+'"';
     r=Math.random();if(r<.2)out[i]+=r<.02?"?":r<.04?"!":r<.12?",":".";
   }
   if(o.caps)for(let i=0;i<out.length;i++){
     const prev=i>0?out[i-1]:(o.prev||"");
-    if(Math.random()<.25||/[.?!]"?$/.test(prev))out[i]=out[i].replace(/[a-z]/,(c?:any)=>c.toUpperCase());
+    if(Math.random()<.25||/[.?!]"?$/.test(prev))out[i]=out[i].replace(CO.letterRe,(c?:any)=>c.toUpperCase());
   }
   return out.map((t?:any)=>BADDEAD.test(t)?t.replace(/[`'"~^]/g,""):t);
 }
@@ -185,21 +196,21 @@ export function extras(toks?:any,o?:any){
 export function focusKey(pool?:any,avoid?:any){
   if(avoid&&avoid.length){const rest=pool.filter((k?:any)=>!avoid.includes(k));if(rest.length)pool=rest}
   let best=null,bv=9;
-  pool.forEach((k?:any)=>{const sv=strengthOf(S.keys[k]);if(sv!=null&&sv<bv){bv=sv;best=k}});
+  pool.forEach((k?:any)=>{const sv=strengthOf(C().keys[k]);if(sv!=null&&sv<bv){bv=sv;best=k}});
   if(best)return best;
-  return pool.slice().sort((a?:any,b?:any)=>((S.keys[a]||{n:0}).n)-((S.keys[b]||{n:0}).n))[0];
+  return pool.slice().sort((a?:any,b?:any)=>((C().keys[a]||{n:0}).n)-((C().keys[b]||{n:0}).n))[0];
 }
 export function slowPairs(max?:any,pool?:any,avoid?:any){
   const set=pool?new Set(pool):null;
-  return Object.keys(S.pairs).filter(p=>!(avoid&&avoid.includes(p))&&usefulPair(p)&&(!set||(set.has(p[0])&&set.has(p[1])))).map(p=>({p,st:S.pairs[p],sv:strengthOf(S.pairs[p],6)})).filter(x=>x.sv!=null).sort((a,b)=>a.sv-b.sv).slice(0,max);
+  return Object.keys(C().pairs).filter(p=>!(avoid&&avoid.includes(p))&&usefulPair(p)&&(!set||(set.has(p[0])&&set.has(p[1])))).map(p=>({p,st:C().pairs[p],sv:strengthOf(C().pairs[p],6)})).filter(x=>x.sv!=null).sort((a,b)=>a.sv-b.sv).slice(0,max);
 }
 /* focus is a single key ("h") or a letter pair ("th") */
 export function chooseFocus(pool?:any,avoid?:any){
-  const key=focusKey(pool,avoid),ksv=strengthOf(S.keys[key]),wp=slowPairs(1,pool,avoid)[0];
+  const key=focusKey(pool,avoid),ksv=strengthOf(C().keys[key]),wp=slowPairs(1,pool,avoid)[0];
   if(wp&&ksv!=null&&wp.sv<=ksv-.05)return wp.p;
   return key;
 }
-export const focusStat=(f?:any)=>f.length===2?S.pairs[f]:S.keys[f];
+export const focusStat=(f?:any)=>f.length===2?C().pairs[f]:C().keys[f];
 export const pairFingers=(p?:any)=>FING[charInfo(p[0]).key.f].n+" then "+FING[charInfo(p[1]).key.f].n;
 export function genPairRound(pool?:any,pair?:any,o?:any){
   const set=new Set(pool),real=realPool(set,2,9);
@@ -240,7 +251,7 @@ export function genPractice(pool?:any,focus?:any,o?:any){
 }
 export let PRI:any=null,NEXT:any=null,SHOWALL:any=false,PINFO:any=null;
 export const capFirst=(t?:any)=>t.charAt(0).toUpperCase()+t.slice(1);
-export const pOpts=()=>{const st=S.settings;return {caps:st.pCaps&&(st.unlockAll||lessonDone(19)),punct:st.pPunct&&(st.unlockAll||lessonDone(20)),nums:st.pNums&&(st.unlockAll||lessonDone(21)||lessonDone(22))}};
+export const pOpts=()=>{const st=S.settings;return {caps:st.pCaps&&(st.unlockAll||lessonDone(CO.capsN)),punct:st.pPunct&&(st.unlockAll||lessonDone(CO.punctN)),nums:st.pNums&&(st.unlockAll||CO.numN.some(lessonDone))}};
 export const pSig=(pool?:any)=>[S.settings.pCaps,S.settings.pPunct,S.settings.pNums].map(Number).join("")+"|"+pool.length;
 export function nextRound(pool?:any,fresh?:any){
   const focus=chooseFocus(pool),sig=pSig(pool);
@@ -249,11 +260,11 @@ export function nextRound(pool?:any,fresh?:any){
 }
 export function paceFor(kind?:any,dur?:any){
   const p=S.settings.pace;if(p==="off")return 0;
-  if(p==="best"){const b=kind==="test"?S.bests["test"+dur]:S.bests.practice;if(b>0)return b}
+  if(p==="best"){const b=kind==="test"?C().bests["test"+dur]:C().bests.practice;if(b>0)return b}
   return S.settings.target;
 }
 /* ---- Test text ---- */
-export const POOLS:any={c200:()=>[...new Set(WORDS_CORE)].filter(w=>w.length>=2),e950:()=>WL.filter(w=>w.length>=2)};
+export const POOLS:any={c200:()=>[...new Set(CO.core as string[])].filter(w=>w.length>=2),e950:()=>WL.filter(w=>w.length>=2)};
 export const POOL_NAME:any={c200:"Common 200",e950:"Everyday 950"};
 export function testChunk(n?:any,o?:any,prev?:any){
   const pool=POOLS[o.pool](),t=[];let last="";
@@ -268,19 +279,21 @@ export const pmSet=(k?:any,v?:any)=>{try{localStorage.setItem(k,v)}catch(e){}};
 export const pmJSON=(k?:any,d?:any)=>{try{const v=JSON.parse(localStorage.getItem(k) as any);return v==null?d:v}catch(e){return d}};
 export const PMODES=[["adaptive","Adaptive"],["text","Real text"],["code","Code"],["mine","Your text"]];
 export const PMLANGS=["All","JavaScript","Python","Swift","CSS","SQL","Shell"];
-export const pmLockN=(m?:any)=>m==="text"?20:m==="code"?22:0;
+/* Real text opens with the punctuation lesson, Code with the last numbers lesson (English course only) */
+export const pmLockN=(m?:any)=>m==="text"?CO.punctN:m==="code"?CO.numN[CO.numN.length-1]:0;
 export const pmLocked=(m?:any)=>{const n=pmLockN(m);return !!n&&!(lessonDone(n)||S.settings.unlockAll)};
-export function pmode(){const m=pmGet(PM_KEY,"adaptive");return PMODES.some(x=>x[0]===m)?m:"adaptive"}
+export function pmode(){const m=pmGet(PM_KEY,"adaptive");return PMODES.some(x=>x[0]===m)&&(m!=="code"||CO.code)?m:"adaptive"}
+export const courseTexts=()=>CO.id==="cs"?CS_TEXTS:TEXTS;
 export const pmChars=(n?:any)=>n+(n===1?" character":" characters");
 export let RT:any=null;
 export const pmDone=()=>{const a=pmJSON(PM_DONE,[]);return Array.isArray(a)?a.filter(x=>typeof x==="string"):[]};
 export function pmMarkDone(id?:any){pmSet(PM_DONE,JSON.stringify(pmDone().filter(x=>x!==id).concat(id).slice(-20)))}
 export function pmPickText(){
-  const done=new Set(pmDone()),fresh=TEXTS.filter(t=>!done.has(t.t)&&t!==RT);
-  RT=pick(fresh.length?fresh:TEXTS.filter(t=>t!==RT));
+  const T=courseTexts(),done=new Set(pmDone()),fresh=T.filter(t=>!done.has(t.t)&&t!==RT);
+  RT=pick(fresh.length?fresh:T.filter(t=>t!==RT));
 }
-export function pmMinutes(n?:any){const w=S.bests.practice||S.settings.target||20,m=Math.max(1,Math.round(n/5/w));return "about "+m+(m===1?" minute":" minutes")}
-export function pmPaceLine(){const pc=paceFor("practice");return pc?'<p class="small muted">Pace caret: '+(S.settings.pace==="best"&&S.bests.practice>0?"your best, ":"")+Math.round(pc)+' WPM</p>':""}
+export function pmMinutes(n?:any){const w=C().bests.practice||S.settings.target||20,m=Math.max(1,Math.round(n/5/w));return "about "+m+(m===1?" minute":" minutes")}
+export function pmPaceLine(){const pc=paceFor("practice");return pc?'<p class="small muted">Pace caret: '+(S.settings.pace==="best"&&C().bests.practice>0?"your best, ":"")+Math.round(pc)+' WPM</p>':""}
 export let CS:any=null;
 export const pmLang=()=>{const l=pmGet(PM_LANG,"All");return PMLANGS.includes(l)?l:"All"};
 export const pmSnips=()=>{const l=pmLang();return l==="All"?SNIPPETS:SNIPPETS.filter(s=>s.lang===l)};
@@ -291,8 +304,14 @@ export function cleanText(s?:any){
   s=String(s).replace(/[\s  -   　]+/g," ");/* line breaks, tabs, no-break and thin spaces */
   const MAP:any={"‘":"'","’":"'","‚":"'","‛":"'","“":'"',"”":'"',"„":'"',"‟":'"',"–":"-","—":"-","−":"-","…":"...","•":"-","×":"x"};
   let o="";for(const ch of s){if(own(MAP,ch)){o+=MAP[ch];n++}else o+=ch}
+  let r="";
+  if(CO.id==="cs"){/* keep every letter the Czech keyboard can type; otherwise drop the accent, then the character */
+    for(const ch of o.normalize("NFC")){if(ch===" "||charInfo(ch)){r+=ch;continue}
+      const b=ch.normalize("NFD").replace(/[̀-ͯ]/g,"");n++;if(b&&b!==ch&&[...b].every(x=>charInfo(x)))r+=b}
+  }else{
   let d="";for(const ch of o.normalize("NFD")){if(/[̀-ͯ]/.test(ch))n++;else d+=ch}
-  let r="";for(const ch of d){if(ch===" "||charInfo(ch))r+=ch;else n++}
+  for(const ch of d){if(ch===" "||charInfo(ch))r+=ch;else n++}
+  }
   return {text:r.replace(/ {2,}/g," ").trim(),changed:n};
 }
 /* parts of about 300 characters (220 to 360), split at sentence ends when possible, otherwise at a space */
@@ -321,6 +340,9 @@ export function mtFeedback(raw?:any,submit?:any){
   if(sp.cut)h+="Only the first "+MT_MAX+" parts are kept.";
   return {err:false,html:h.trim(),c,sp};
 }
+
+/* a course switch: word pools, the queued practice round and the picked passages belong to the old course */
+export function resetCourseCaches() { for (const k of Object.keys(poolCache)) delete poolCache[k]; NEXT = null; RT = null; CS = null; }
 
 /* mutable module state needs setters, because an imported live binding cannot be assigned from outside */
 export function setPRI(v: any) { PRI = v; }

@@ -8,8 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Btn, Cap, ENTER, Panel, Pstat, Stars, StatusChip } from "@/components/parts";
 import { Keyboard, Hands } from "@/components/Keyboard";
 import { TypingStage } from "@/components/TypingStage";
-import { S } from "@/core/state";
-import { FING, LAY, LESSONS, STEP_NAMES, WL, charInfo, idsFor, reach } from "@/core/data";
+import { S, C } from "@/core/state";
+import { FING, LAY, LESSONS, STEP_NAMES, WL, CO, charInfo, idsFor, reach } from "@/core/data";
 import { genLesson, ctx } from "@/core/generate";
 import { applyLessonResult, lessonDone, learnedChars, minutesToday, nextLessonN, pctTxt, streak, unlocked, weakestKey } from "@/core/stats";
 import { levelInfo, rewardsLesson } from "@/core/rewards";
@@ -72,7 +72,7 @@ function Intro({ n, onStart, onBack }: { n: number; onStart: () => void; onBack:
 }
 
 function LessonRow({ l, nx, onOpen }: { l: any; nx: number; onOpen: (n: number) => void }) {
-  const r = S.lessons[l.n], lock = !unlocked(l.n), isNext = l.n === nx, done = lessonDone(l.n);
+  const r = C().lessons[l.n], lock = !unlocked(l.n), isNext = l.n === nx, done = lessonDone(l.n);
   const keyTxt = l.shift ? "Both Shift keys" : l.review ? "Mixed review" : (l.keys.map((k: string) => FING[(charInfo(k) || { key: { f: "TH" } }).key.f].n) as string[]).filter((v: string, i: number, a: string[]) => a.indexOf(v) === i).join(" and ");
   return (
     <button className={cn("lrow", lock && "locked", isNext && "next")} type="button" data-n={l.n} aria-disabled={lock || undefined} onClick={lock ? undefined : () => onOpen(l.n)}>
@@ -93,7 +93,7 @@ function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSessi
   const nx = nextLessonN(), L = nx ? LESSONS[nx - 1] : null, m = minutesToday(), g = S.settings.goal, st = streak(), wk = weakestKey() as string | null;
   const bar = useGrown(Math.min(100, m / g * 100));
   const lc = learnedChars(), ids = new Set(idsFor([...lc]) as string[]);
-  if (lessonDone(19)) { ids.add("ShiftLeft"); ids.add("ShiftRight"); }
+  if (lessonDone(CO.capsN)) { ids.add("ShiftLeft"); ids.add("ShiftRight"); }
   const up: string[] = L ? (L.shift ? ["ShiftLeft", "ShiftRight"] : idsFor(L.keys) as string[]) : [];
   const cnt: Record<string, { d: number; t: number }> = {};
   LESSONS.forEach(l => { const c = cnt[l.stage] || (cnt[l.stage] = { d: 0, t: 0 }); c.t++; if (lessonDone(l.n)) c.d++; });
@@ -135,9 +135,11 @@ function LearnList({ onOpen, onSession }: { onOpen: (n: number) => void; onSessi
 }
 
 /* ---- the run: 3 steps of generated text ---- */
-const WLSET = new Set(WL as string[]);
+/* the active course's word set (rebuilt when the course changes) */
+let WLSET: Set<string> | null = null, WLSRC: string[] | null = null;
+const wlSet = () => { if (WLSRC !== WL) { WLSRC = WL; WLSET = new Set(WL); } return WLSET!; };
 function stepNames(texts: string[]) {
-  const t = texts[2].split(" "), real = t.filter(w => WLSET.has(w.replace(/[^A-Za-z]/g, "").toLowerCase())).length;
+  const t = texts[2].split(" "), real = t.filter(w => wlSet().has([...w.toLowerCase()].filter(c => CO.letterRe.test(c)).join(""))).length;
   return [STEP_NAMES[0], STEP_NAMES[1], real < t.length / 2 ? "Rhythm" : "Words"];
 }
 interface Run { n: number; step: number; texts: string[]; names: string[]; agg: { ms: number; chars: number; presses: number; correct: number; missBy: Record<string, number> }; }
