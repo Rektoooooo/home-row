@@ -9,30 +9,38 @@ import { setHooks } from "./hooks";
 import { resetRewardsForTests } from "./rewards";
 import { supaHost, isAuthReturn } from "./supa";
 
-/* a fake supabase-js client over one table: docs(user_id, name, data); rows of other users are invisible (RLS) */
-/* fail: an HTTP status for every call, or "network" (supabase-js reports status 0 and "Failed to fetch") */
-function fakeSupa(o: { rows?: any[]; fail?: number | "network" } = {}) {
-  const rows: any[] = (o.rows || []).map(clone), calls: any[] = [];
+/* a fake supabase-js client over public.users (one row per person; progress, progress_cs, coach columns); rows of
+   other users are invisible (RLS). Seed rows are given doc-style ({ user_id, name, data }) for readability.
+   fail: an HTTP status for every call, or "network" (supabase-js reports status 0 and "Failed to fetch") */
+const COLS: Record<string, string> = { progress: "progress", "progress-cs": "progress_cs", coach: "coach" };
+function fakeSupa(o: { rows?: any[]; fail?: number | "network"; noRow?: boolean } = {}) {
+  const users = new Map<string, any>(), calls: any[] = [];
+  for (const r of o.rows || []) { const u = users.get(r.user_id) || { id: r.user_id, email: "x@example.invalid" }; u[COLS[r.name]] = clone(r.data); users.set(r.user_id, u); }
   let fail: number | "network" | 0 = o.fail || 0;
   const res = (r: any) => (fail === "network" ? { data: null, error: { message: "TypeError: Failed to fetch" }, status: 0 } : fail ? { data: null, error: { message: "boom" }, status: fail } : r);
   const c = {
     from(t: string) {
-      expect(t).toBe("docs");
-      const f: any = {};
-      const q = {
-        select(_cols: string) { return q; },
+      expect(t).toBe("users");
+      let cols = "", patch: any = null; const f: any = {};
+      const q: any = {
+        select(c2: string) { cols = c2; return q; },
         eq(k: string, v: any) { f[k] = v; return q; },
-        async maybeSingle() { calls.push(["get", f.user_id, f.name]); const r = rows.find(x => x.user_id === f.user_id && x.name === f.name); return res({ data: r ? { data: clone(r.data) } : null, error: null, status: 200 }); },
-        async upsert(row: any) {
-          calls.push(["set", row.user_id, row.name]); const out = res({ error: null, status: 201 }); if (out.error) return out;
-          const i = rows.findIndex(x => x.user_id === row.user_id && x.name === row.name); if (i >= 0) rows[i] = clone(row); else rows.push(clone(row)); return out;
+        async maybeSingle() { calls.push(["get", f.id, cols]); const u = users.get(f.id); return res({ data: u ? { [cols]: u[cols] ?? null } : null, error: null, status: 200 }); },
+        update(row: any) { patch = row; return q; },
+        async insert(row: any) { calls.push(["insert", row.id, Object.keys(row).join()]); const out = res({ error: null, status: 201 }); if (out.error) return out; users.set(row.id, { ...(users.get(row.id) || {}), ...clone(row) }); return out; },
+        then(ok: any, bad: any) { /* awaiting update(...).eq(...).select("id") */
+          calls.push(["set", f.id, Object.keys(patch || {}).join()]);
+          const out = res(null); if (out) return Promise.resolve(out).then(ok, bad);
+          const u = users.get(f.id); if (u) Object.assign(u, clone(patch));
+          return Promise.resolve({ data: u ? [{ id: f.id }] : [], error: null, status: 200 }).then(ok, bad);
         },
       };
       return q;
     },
     setFail(s: number | "network") { fail = s; },
   };
-  return { c, rows, calls, row: (uid: string, name: string) => rows.find(x => x.user_id === uid && x.name === name) };
+  if (o.noRow) users.clear();
+  return { c, users, calls, row: (uid: string, name: string) => { const u = users.get(uid); const v = u ? u[COLS[name]] : undefined; return v == null ? undefined : { data: v }; } };
 }
 const flushAll = async () => { for (let i = 0; i < 20; i++) await Promise.resolve(); await vi.advanceTimersByTimeAsync(0); };
 const lesson = (n: number) => ({ [n]: { done: true, stars: 1, wpm: 15, acc: 1, attempts: 1, last: NOW } });
@@ -47,7 +55,7 @@ afterEach(() => { vi.useRealTimers(); });
 
 describe("Supabase host: the claude.ai doc shape on the docs table", () => {
   it("doc paths map to (user, name) rows; get/set round trip; unknown paths are refused", async () => {
-    const f = fakeSupa(), h = supaHost(f.c, "u1"), db: any = await h.use("db");
+    const f = fakeSupa({ rows: [{ user_id: "u1", name: "coach", data: {} }] }), h = supaHost(f.c, "u1"), db: any = await h.use("db");
     expect(await h.use("sample")).toBeNull();
     expect(await (await h.use("user") as any).id()).toBe("u1");
     expect((await db.doc("data/users/u1/progress").get()).exists).toBe(false);
@@ -56,6 +64,10 @@ describe("Supabase host: the claude.ai doc shape on the docs table", () => {
     const s = await db.doc("data/users/u1/progress-cs").get();
     expect(s.exists).toBe(true); expect(s.data()).toEqual({ a: 1 });
     expect(() => db.doc("data/users/u1/secrets")).toThrow();
+    /* no row yet (before the sign-in trigger ran): set adds it */
+    const g = fakeSupa(), db2: any = await supaHost(g.c, "u9").use("db");
+    await db2.doc("data/users/u9/progress").set({ b: 2 });
+    expect(g.users.get("u9").progress).toEqual({ b: 2 }); expect(g.calls.map(x => x[0])).toEqual(["set", "insert"]);
     let snap: any = null; db.doc("data/users/u1/progress-cs").onSnapshot((x: any) => { snap = x; }); await flushAll();
     expect(snap.data()).toEqual({ a: 1 });
   });

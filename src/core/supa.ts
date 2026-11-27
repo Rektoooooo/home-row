@@ -1,6 +1,7 @@
 /* SUPA (website only): Google sign-in through Supabase, and an account host with the same shape as claude.ai's
    (use("db") → doc(path).get/set/onSnapshot, use("user") → id()), so sync.ts connectAccount() runs on it unchanged.
-   Rows: public.docs (user_id, name, data) with name progress | progress-cs | coach; row level security keeps them private.
+   Table public.users: one row per person, the Google profile (filled by a database trigger on sign-in) and the
+   progress columns progress | progress_cs | coach that this host reads and writes; row level security keeps it private.
    This module is imported only on the website, and supabase-js itself only when someone signs in or has a session. */
 import { SUPA_URL, SUPA_KEY } from "@/config";
 import { connectAccount, disconnectAccount, acctHost } from "./sync";
@@ -20,6 +21,7 @@ export const isAuthReturn = (search = location.search) => /[?&](code|error)=/.te
 
 /* the account host: errors become the codes flush() knows (unavailable → retry, then offline; not_granted → stop) */
 const DOC = /^data\/users\/[^/]+\/(progress|progress-cs|coach)$/;
+const COL: Record<string, string> = { progress: "progress", "progress-cs": "progress_cs", coach: "coach" };
 export function supaHost(c: any, uid: string) {
   const fail = (r: any) => {
     const st = r.status || 0, msg = (r.error && r.error.message) || "";
@@ -28,15 +30,22 @@ export function supaHost(c: any, uid: string) {
   };
   const doc = (path: string) => {
     const m = DOC.exec(path); if (!m) throw Object.assign(new Error("unknown doc " + path), { code: "invalid_argument" });
-    const name = m[1];
+    const col = COL[m[1]];
     const get = async () => {
-      const r = await c.from("docs").select("data").eq("user_id", uid).eq("name", name).maybeSingle();
+      const r = await c.from("users").select(col).eq("id", uid).maybeSingle();
       if (r.error) fail(r);
-      return { exists: !!r.data, data: () => (r.data ? r.data.data : undefined) };
+      const v = r.data ? r.data[col] : null;
+      return { exists: v != null, data: () => (v != null ? v : undefined) };
     };
     return {
       get,
-      async set(v: any) { const r = await c.from("docs").upsert({ user_id: uid, name, data: v, updated_at: new Date().toISOString() }); if (r.error) fail(r); },
+      /* the row exists from the sign-in trigger; if it doesn't (yet), it is added */
+      async set(v: any) {
+        const row = { [col]: v, updated_at: new Date().toISOString() };
+        const r = await c.from("users").update(row).eq("id", uid).select("id");
+        if (r.error) fail(r);
+        if (!r.data || !r.data.length) { const i = await c.from("users").insert({ id: uid, ...row }); if (i.error) fail(i); }
+      },
       /* nothing else writes these rows on the website, so one read is the whole snapshot */
       onSnapshot(cb: (s: any) => void, onErr?: (e: any) => void) { get().then(cb, e => { if (onErr) onErr(e); }); },
     };
