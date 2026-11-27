@@ -29,7 +29,7 @@ export const HOMEID:any={LP:"KeyA",LR:"KeyS",LM:"KeyD",LI:"KeyF",RI:"KeyJ",RM:"K
 /* finger per letter key code (the same for every layout: Y and Z only swap their letters on Czech QWERTZ) */
 export const CODE_F:any={KeyQ:"LP",KeyW:"LR",KeyE:"LM",KeyR:"LI",KeyT:"LI",KeyY:"RI",KeyU:"RI",KeyI:"RM",KeyO:"RR",KeyP:"RP",KeyA:"LP",KeyS:"LR",KeyD:"LM",KeyF:"LI",KeyG:"LI",KeyH:"RI",KeyJ:"RI",KeyK:"RM",KeyL:"RR",KeyZ:"LP",KeyX:"LR",KeyC:"LM",KeyV:"LI",KeyB:"LI",KeyN:"RI",KeyM:"RI"};
 export const LF:any={q:"LP",w:"LR",e:"LM",r:"LI",t:"LI",y:"RI",u:"RI",i:"RM",o:"RR",p:"RP",a:"LP",s:"LR",d:"LM",f:"LI",g:"LI",h:"RI",j:"RI",k:"RM",l:"RR",z:"LP",x:"LR",c:"LM",v:"LI",b:"LI",n:"RI",m:"RI"};
-export const DIG=[["1","!","LP"],["2","@","LR"],["3","#","LM"],["4","$","LI"],["5","%","LI"],["6","^","LI"],["7","&","RI"],["8","*","RM"],["9","(","RR"],["0",")","RP"]];
+export const DIG=[["1","!","LP"],["2","@","LR"],["3","#","LM"],["4","$","LI"],["5","%","LI"],["6","^","RI"],["7","&","RI"],["8","*","RM"],["9","(","RR"],["0",")","RP"]];
 
 /* keyboard layouts
    variant "us": U.S. (the English course). "cs-qwertz" / "cs-qwerty": Apple's and Windows' Czech layouts, read from the
