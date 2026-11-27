@@ -280,7 +280,8 @@ export const pmSet=(k?:any,v?:any)=>{try{localStorage.setItem(k,v)}catch(e){}};
 export const pmJSON=(k?:any,d?:any)=>{try{const v=JSON.parse(localStorage.getItem(k) as any);return v==null?d:v}catch(e){return d}};
 export const PMODES=[["adaptive","Adaptive"],["text","Real text"],["code","Code"],["mine","Your text"]];
 /* translated names for the UI (the English names stay the ids) */
-export const poolName=(id?:any)=>POOL_NAME[id]?t("pool|"+POOL_NAME[id]):String(id);
+/* the Czech course's everyday pool has about 1,000 words */
+export const poolName=(id?:any)=>id==="e950"&&CO.id==="cs"?t("pool|Everyday 1000"):POOL_NAME[id]?t("pool|"+POOL_NAME[id]):String(id);
 export const pmodeName=(id?:any)=>{const m=PMODES.find(x=>x[0]===id);return m?t("mode|"+m[1]):String(id)};
 export const PMLANGS=["All","JavaScript","Python","Swift","CSS","SQL","Shell"];
 /* Real text opens with the punctuation lesson, Code with the last numbers lesson (English course only) */
