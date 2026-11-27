@@ -137,7 +137,7 @@ if (!SHOTS) {
     await open(page);
     ok(await page.getByRole("dialog", { name: "Settings" }).isVisible(), "settings opens as a dialog named Settings");
     const sections = await page.locator(".sgroup > h3").evaluateAll((e) => e.map((x) => x.textContent));
-    ok(sections.join(",") === "Language and course,Appearance,Typing,Goals,Keyboard,Lessons,Progress,Coach,About", "sections: " + sections.join(","));
+    ok(sections.join(",") === "Language and course,Appearance,Typing,Goals,Keyboard,Lessons,Account,Progress,Coach,About", "sections: " + sections.join(","));
     ok(await checked(page, "Theme", "System") && await checked(page, "Keyboard hints", "Always") && await checked(page, "Key sound", "Off") && await checked(page, "Daily goal", "15 min") && await checked(page, "Target speed", "25") && await checked(page, "Pace caret", "Target") && await checked(page, "Keyboard shape", "ISO"), "defaults shown");
     ok(await page.getByRole("switch", { name: "Stop on mistakes" }).isChecked() && !(await page.getByRole("switch", { name: "Unlock all lessons" }).isChecked()), "switch defaults: stop on, unlock off");
     ok((await T(page, "#set-coach-off")) === "Available when Home Row runs inside Claude.", "website coach text");
