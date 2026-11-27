@@ -45,7 +45,9 @@ export function GuideView() {
             t("Turn on the Czech input source. Mac: System Settings → Keyboard → Text Input → Edit → + → Czech (or Czech – QWERTY). Windows: Settings → Time & language → Language & region → Czech → Language options → Add a keyboard. Then pick it in the input menu while you practise."),
             t("QWERTZ or QWERTY: choose the same one in Settings that your computer uses. On QWERTZ the Z key sits where QWERTY has Y, and the keyboard on the screen follows your choice."),
             t("The number row types ě š č ř ž ý á í é. For digits, hold Shift."),
-            t("The key left of Backspace is an accent key: ´ on its own, ˇ with Shift. Press it, let go, then press the letter: ´ then o gives ó, ˇ then d gives ď. For a capital, hold Shift on the letter: ˇ then Shift + C gives Č. The hint under the text shows both steps."),
+            t("The number row uses the Czech school fingering: ě with the left pinky, š ring finger, č middle, ř and ž index; ý and á with the right index, í middle, é ring."),
+            t("The key left of Backspace is an accent key: ´ on its own, ˇ with Shift. Press it, let go, then press the letter: ´ then o gives ó, ˇ then d gives ď, and ˇ then Shift + D gives Ď. The hint under the text shows both steps."),
+            t("Capitals with an accent, such as Č, Ř or Á: turn Caps Lock on, press the letter's key, then turn Caps Lock off, as Czech schools teach it. On a Mac, if Caps Lock switches the input source instead, turn that off under System Settings → Keyboard → Text Input → Edit."),
             t("A few keys differ between Mac and Windows (the key left of 1 and Shift + ¨). The course doesn't use them, so either works."),
           ]} />
         </> : <>

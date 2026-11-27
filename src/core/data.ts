@@ -48,7 +48,10 @@ export function buildLayout(shape?:any,variant:string="us",mac:boolean=true){
   if(!cz){r0.push(iso?Object.assign(K("Backquote","§","±","LP"),{nochar:1}):K("Backquote","`","~","LP"));DIG.forEach((d,i)=>r0.push(K("Digit"+d[0],d[0],d[1],d[2])));
     r0.push(K("Minus","-","_","RP"),K("Equal","=","+","RP"),M("Backspace","delete","RP",2,"e"))}
   else{r0.push(mac?(iso?K("Backquote","<",">","LP"):K("Backquote","\\","|","LP")):dead(K("Backquote",";","°","LP"),false,true));
-    "+ěščřžýáíé".split("").forEach((c,i)=>r0.push(K("Digit"+DIG[i][0],c,DIG[i][0],DIG[i][2])));
+    /* Czech school fingering: the number row shifts one finger to the left of the English chart
+       (+ ě left pinky, š ring, č middle, ř ž left index, ý á right index, í middle, é ring) */
+    const CZF=["LP","LP","LR","LM","LI","LI","RI","RI","RM","RR"];
+    "+ěščřžýáíé".split("").forEach((c,i)=>r0.push(K("Digit"+DIG[i][0],c,DIG[i][0],CZF[i])));
     r0.push(K("Minus","=","%","RP"),dead(K("Equal","´","ˇ","RP"),true,true),M("Backspace","delete","RP",2,"e"))}
   const bsl=cz?dead(K("Backslash","¨",mac?"`":"'","RP",iso?1:1.5),true,false):K("Backslash","\\","|","RP",iso?1:1.5);
   const r1:any[]=[M("Tab","tab","LP",1.5),...(cz?Lc("qwertyuiop"):Ls("qwertyuiop")),cz?K("BracketLeft","ú","/","RP"):K("BracketLeft","[","{","RP"),cz?K("BracketRight",")","(","RP"):K("BracketRight","]","}","RP")];
@@ -68,14 +71,15 @@ export function buildLayout(shape?:any,variant:string="us",mac:boolean=true){
   keys.forEach(k=>{if(k.nochar)return;if(k.space){chars[" "]={id:k.id,shift:false};return}
     if(k.base){if(!k.deadB)chars[k.base]={id:k.id,shift:false};if(k.sh&&typeof k.sh==="string"&&!k.deadS)chars[k.sh]={id:k.id,shift:true}}});
   if(cz){
-    /* letters with no key of their own: the accent key first, then the letter (Shift for a capital).
-       ´ (Equal): á é í ó ú ý; ˇ (Shift + Equal): č ď ě ň ř š ť ž. Letters that have a key keep it (á is Digit8). */
+    /* capitals of the letters that have a key (Ě Š Č Ř Ž Ý Á Í É Ú Ů): Caps Lock on, the letter's key, Caps Lock off,
+       as Czech schools teach it; the same on Mac and Windows */
+    for(const c of "ěščřžýáíéúů"){const k=chars[c];if(k)chars[c.toUpperCase()]={id:k.id,shift:false,caps:true}}
+    /* ó ď ť ň have no key: the accent key first, then the letter (Shift for a capital).
+       ´ (Equal): ó; ˇ (Shift + Equal): ď ť ň */
     const add=(ch:string,deadShift:boolean)=>{const b=chars[ch.normalize("NFD")[0]];if(!b)return;
       if(!chars[ch])chars[ch]={id:b.id,shift:false,dead:{id:"Equal",shift:deadShift}};
       const U=ch.toUpperCase();if(!chars[U])chars[U]={id:b.id,shift:true,dead:{id:"Equal",shift:deadShift}}};
-    [..."áéíóúý"].forEach(c=>add(c,false));[..."čďěňřšťž"].forEach(c=>add(c,true));
-    /* Ů: Mac ˇ + Shift+U; Windows ° (Shift + the key left of 1) + Shift+U */
-    chars["Ů"]={id:"KeyU",shift:true,dead:mac?{id:"Equal",shift:true}:{id:"Backquote",shift:true}};
+    add("ó",false);[..."ďňť"].forEach(c=>add(c,true));
   }
   return {keys,byId,chars};
 }
@@ -103,14 +107,16 @@ export function reach(id?:any):any{
   return {phrase,from:(h.base||"").toUpperCase(),home:false};
 }
 export const shiftIdFor=(f?:any)=>f&&f[0]==="L"?"ShiftRight":"ShiftLeft";
-/* key, Shift and fingers for one character. A letter typed through an accent key also gets `pre`: the same fields for
-   the accent key, which is pressed first (key/ids/fingers stay the letter key's) */
+/* key, Shift and fingers for one character. A letter typed through an accent key (ó ď) or with Caps Lock (Č) also gets
+   `pre`: the same fields for the accent key or Caps Lock, which comes first (key/ids/fingers stay the letter key's);
+   pre.caps marks the Caps Lock case */
 export function charInfo(ch?:any):any{
   const m=CM()[ch];if(!m)return null;
   const step=(id:string,shift:boolean)=>{const k=LAY().byId[id];const sid=shift?shiftIdFor(k.f):null;
     return {key:k,shift,shiftId:sid,ids:sid?[k.id,sid]:[k.id],fingers:sid?[k.f,LAY().byId[sid].f]:[k.f]}};
   const r:any=step(m.id,m.shift);
   if(m.dead)r.pre=step(m.dead.id,m.dead.shift);
+  else if(m.caps)r.pre=Object.assign(step("CapsLock",false),{caps:true});
   return r;
 }
 export const homeCh=(k?:any)=>{const m=CM()[k];if(!m)return k;const f=LAY().byId[m.id].f;if(!f||f==="TH")return k;return LAY().byId[HOMEID[f]].base};

@@ -43,11 +43,13 @@ describe("Czech layouts", () => {
       expect(lay.chars["ó"]).toEqual({ id: "KeyO", shift: false, dead: { id: "Equal", shift: false } });
       expect(lay.chars["Ó"]).toEqual({ id: "KeyO", shift: true, dead: { id: "Equal", shift: false } });
       expect(lay.chars["ď"]).toEqual({ id: "KeyD", shift: false, dead: { id: "Equal", shift: true } });
-      expect(lay.chars["Č"]).toEqual({ id: "KeyC", shift: true, dead: { id: "Equal", shift: true } });
-      expect(lay.chars["Ú"]).toEqual({ id: "KeyU", shift: true, dead: { id: "Equal", shift: false } });
+      expect(lay.chars["Ď"]).toEqual({ id: "KeyD", shift: true, dead: { id: "Equal", shift: true } });
+      /* capitals of letters that have a key: Caps Lock + the key (the Czech school method) */
+      expect(lay.chars["Č"]).toEqual({ id: "Digit4", shift: false, caps: true });
+      expect(lay.chars["Ú"]).toEqual({ id: "BracketLeft", shift: false, caps: true });
       expect(lay.chars["á"]).toEqual({ id: "Digit8", shift: false });
-      expect(lay.chars["Á"]).toEqual({ id: "KeyA", shift: true, dead: { id: "Equal", shift: false } });
-      expect(lay.chars["Ů"].dead).toEqual(mac ? { id: "Equal", shift: true } : { id: "Backquote", shift: true });
+      expect(lay.chars["Á"]).toEqual({ id: "Digit8", shift: false, caps: true });
+      expect(lay.chars["Ů"]).toEqual({ id: "Semicolon", shift: false, caps: true });
     });
     it(`${name}: Y and Z`, () => {
       const lay = buildLayout(shape, variant, mac), qz = variant === "cs-qwertz";
@@ -55,13 +57,15 @@ describe("Czech layouts", () => {
       expect(lay.chars["y"].id).toBe(qz ? "KeyZ" : "KeyY");
       expect(lay.byId.KeyY.f).toBe("RI");
       expect(lay.byId.KeyZ.f).toBe("LP");
-      expect(lay.chars["Ý"]).toEqual({ id: qz ? "KeyZ" : "KeyY", shift: true, dead: { id: "Equal", shift: false } });
+      expect(lay.chars["Ý"]).toEqual({ id: "Digit7", shift: false, caps: true });
       expect(lay.chars["ž"].id).toBe("Digit6");
-      expect(lay.chars["Ž"]).toEqual({ id: qz ? "KeyY" : "KeyZ", shift: true, dead: { id: "Equal", shift: true } });
+      expect(lay.chars["Ž"]).toEqual({ id: "Digit6", shift: false, caps: true });
     });
-    it(`${name}: same key geometry as the U.S. layout`, () => {
-      const lay = buildLayout(shape, variant, mac), us = LAYOUTS[shape];
-      expect(lay.keys.map((k: any) => [k.id, k.x, k.row, k.w, k.f])).toEqual(us.keys.map((k: any) => [k.id, k.x, k.row, k.w, k.f]));
+    it(`${name}: same key geometry as the U.S. layout; the number row uses the Czech school fingers`, () => {
+      const lay = buildLayout(shape, variant, mac), us = LAYOUTS[shape], num = /^Digit\d$/;
+      expect(lay.keys.map((k: any) => [k.id, k.x, k.row, k.w, num.test(k.id) ? "" : k.f])).toEqual(us.keys.map((k: any) => [k.id, k.x, k.row, k.w, num.test(k.id) ? "" : k.f]));
+      expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(d => lay.byId["Digit" + d].f)).toEqual(["LP", "LP", "LR", "LM", "LI", "LI", "RI", "RI", "RM", "RR"]);
+      expect(["Minus", "Equal", "BracketLeft", "BracketRight", "Semicolon", "Quote", "Slash"].map(id => lay.byId[id].f)).toEqual(Array(7).fill("RP"));
     });
   }
   it("platform legends: Mac and Windows differ only on the key left of 1 and Shift + ¨", () => {
@@ -87,21 +91,24 @@ describe("Czech course: charInfo and the layout switch", () => {
     setCOURSE("en");
     expect(LAY()).toBe(LAYOUTS.ansi);
   });
-  it("a capital with a háček: ˇ (Shift + the key left of Backspace), then Shift + the letter", () => {
+  it("Č: Caps Lock first, then the č key; Ď: ˇ (Shift + the key left of Backspace), then Shift + D", () => {
     setCOURSE("cs");
     const i = charInfo("Č");
-    expect(i.key.id).toBe("KeyC");
-    expect(i.ids).toEqual(["KeyC", "ShiftRight"]);
-    expect(i.fingers).toEqual(["LM", "RP"]);
-    expect(i.pre.ids).toEqual(["Equal", "ShiftLeft"]);
-    expect(i.pre.fingers).toEqual(["RP", "LP"]);
+    expect(i.key.id).toBe("Digit4"); expect(i.shift).toBe(false);
+    expect(i.ids).toEqual(["Digit4"]); expect(i.fingers).toEqual(["LM"]);
+    expect(i.pre.ids).toEqual(["CapsLock"]); expect(i.pre.fingers).toEqual(["LP"]); expect(i.pre.caps).toBe(true);
+    const d = charInfo("Ď");
+    expect(d.ids).toEqual(["KeyD", "ShiftRight"]);
+    expect(d.pre.ids).toEqual(["Equal", "ShiftLeft"]); expect(d.pre.fingers).toEqual(["RP", "LP"]); expect(d.pre.caps).toBeUndefined();
     expect(charInfo("č").pre).toBeUndefined();
     expect(charInfo("ó").pre.ids).toEqual(["Equal"]);
     expect(idsFor(["ó"])).toEqual(["KeyO", "Equal"]);
+    expect(idsFor(["Č"])).toEqual(["Digit4", "CapsLock"]);
     expect(homeCh("ó")).toBe("l");
-    expect(homeCh("ě")).toBe("s");
+    expect(homeCh("ě")).toBe("a");
+    expect(homeCh("ž")).toBe("f");
+    expect(homeCh("é")).toBe("l");
     expect(homeCh("ů")).toBe("ů");
-    expect(reach("Digit2").phrase).toBe("up two rows");
   });
   it("the English course never sees Czech characters", () => {
     expect(charInfo("č")).toBeNull();

@@ -15,7 +15,7 @@ export const reduceMotion = () => typeof matchMedia !== "undefined" && matchMedi
 /* the screen currently shown: which function Esc runs outside a stage (UI.escape in legacy) */
 export const nav: { escape: null | (() => void) } = { escape: null };
 export const PACE_LIVE = new Set<any>();
-let EX: any = null, czechShown = false, csInputShown = false, csYZ = 0, lastComp: any = null, sinkEl: HTMLTextAreaElement | null = null;
+let EX: any = null, czechShown = false, csInputShown = false, csYZ = 0, capsOn = false, capsTipShown = false, lastComp: any = null, sinkEl: HTMLTextAreaElement | null = null;
 export const currentExercise = () => EX;
 
 /* course tips: only the English course shows them (the Czech course types its accents on purpose) */
@@ -23,6 +23,7 @@ const tipText = (k: string) => k === "dead"
   ? t("Your U.S. International layout treats ' and \" as accent keys. Press Space after them to type the mark on its own; the app accepts that. Or switch to the ABC or U.S. layout while you practise.")
   : k === "csInput" ? t("Your keyboard isn't typing Czech: the number row should give ě, š and č. Switch the input source to Czech in the input menu.")
   : k === "csYZ" ? t("Y and Z are swapped: your computer uses the other Czech layout. Switch between QWERTZ and QWERTY in Settings so the screen matches.")
+  : k === "csCaps" ? t("Caps Lock is still on. Turn it off after a capital with an accent.")
   : t("Your Czech keyboard is active. Switch the input source back to U.S. to match this course.");
 
 /* armed: the accent key of a letter like ó or Č was pressed, the letter comes next */
@@ -34,6 +35,10 @@ function hintHTML(ch: string, armed?: boolean) {
   const k = i.key, r = reach(k.id);
   const where = r.home ? t("home key") : t("reach {phrase} from {from}", { phrase: reachText(r.phrase), from: esc(r.from) });
   const dot = '<span class="dot" style="--fc:' + fcol(k.f) + '"></span>';
+  if (i.pre && i.pre.caps) {
+    if (!armed) return '<span class="dot" style="--fc:' + fcol(i.pre.key.f) + '"></span>' + t("<b>{key}</b> · Caps Lock with your {pf}, then {letter}", { key: lbl, pf: finger(i.pre.key.f, "ins"), letter: esc(k.base.toUpperCase()) });
+    return dot + t("<b>{key}</b> · now {letter} with your {finger}", { key: lbl, letter: esc(k.base.toUpperCase()), finger: finger(k.f, "ins") });
+  }
   if (i.pre) {
     const p = i.pre, acc = p.shift ? t("{acc} (Shift + {base})", { acc: esc(p.key.sh), base: esc(p.key.base) }) : esc(p.key.base);
     const letter = (i.shift ? "Shift + " : "") + esc(k.base.toUpperCase());
@@ -139,11 +144,15 @@ export function createExercise(o: any, root: HTMLElement) {
       q("hands").setAttribute("aria-label", i && show ? (i.fingers.length > 1 ? t("Use your {a} and your {b}", { a: finger(i.fingers[0]), b: finger(i.fingers[1]) }) : t("Use your {a}", { a: finger(i.fingers[0]) })) : t("Hands")); };
     if (E.pos >= N) { kb.set({ next: [] }); hands.set([]); hintEl.innerHTML = ""; return; }
     const i0 = text[E.pos] === "\n" ? enterInfo() : charInfo(text[E.pos]), show = mode === "always" || (mode === "hesitate" && E.reveal);
-    /* a letter typed through an accent key: the accent key first, the letter once the accent is down */
-    const i = i0 && i0.pre && !E.deadArmed ? i0.pre : i0;
+    /* a letter typed through an accent key or Caps Lock: that key first, the letter once it is down (Caps Lock on);
+       Caps Lock still on before a small letter: turn it off first */
+    const armed = !!(i0 && i0.pre && (i0.pre.caps ? capsOn : E.deadArmed));
+    const ch = text[E.pos], capsOff = CO.id === "cs" && capsOn && !!i0 && !i0.pre && ch !== ch.toUpperCase();
+    const capsKey = LAY().byId.CapsLock, i = capsOff ? { key: capsKey, shift: false, shiftId: null, ids: ["CapsLock"], fingers: [capsKey.f] } : i0 && i0.pre && !armed ? i0.pre : i0;
+    const html = () => capsOff ? '<span class="dot" style="--fc:' + fcol(capsKey.f) + '"></span>' + t("<b>Caps Lock</b> · turn it off with your {finger}", { finger: finger(capsKey.f, "ins") }) : hintHTML(ch, armed);
     lab(i, show);
-    if (!i || !show) { kb.set({ next: [] }); hands.set(text[E.pos] === " " && show ? ["TH"] : []); hintEl.innerHTML = show && i ? hintHTML(text[E.pos], E.deadArmed) : ""; if (!i) return; return; }
-    kb.set({ next: i.ids }); hands.set(i.fingers); hintEl.innerHTML = hintHTML(text[E.pos], E.deadArmed);
+    if (!i || !show) { kb.set({ next: [] }); hands.set(ch === " " && show ? ["TH"] : []); hintEl.innerHTML = show && i ? html() : ""; if (!i) return; return; }
+    kb.set({ next: i.ids }); hands.set(i.fingers); hintEl.innerHTML = html();
   }
   function armReveal() {
     clearTimeout(revealT); E.reveal = false;
@@ -174,6 +183,7 @@ export function createExercise(o: any, root: HTMLElement) {
     if (!hit) E.missAt.push(Math.floor(elapsed(now) / 1000) + 1);
     if (CO.id === "en" && !hit && /[ěščřžýáíéůú]/.test(ch) && !/[ěščřžýáíéůú]/.test(exp) && !czechShown) { czechShown = true; showTip("czech"); }
     /* the Czech course: digits or U.S. symbols where Czech letters belong → the input source isn't Czech; y/z swapped twice → the other Czech layout */
+    if (CO.id === "cs" && !hit && capsOn && !capsTipShown && exp !== exp.toUpperCase() && ch === exp.toUpperCase()) { capsTipShown = true; showTip("csCaps"); }
     if (CO.id === "cs" && !hit) {
       if (!csInputShown && ((/[0-9]/.test(ch) && /[ěščřžýáíé+]/.test(exp)) || (ch === ";" && exp === "ů") || (ch === "[" && exp === "ú") || (ch === "'" && exp === "§"))) { csInputShown = true; showTip("csInput"); }
       else if ((exp === "z" && ch === "y") || (exp === "y" && ch === "z") || (exp === "Z" && ch === "Y") || (exp === "Y" && ch === "Z")) { if (++csYZ === 2) showTip("csYZ"); }
@@ -277,7 +287,13 @@ export function installEngine(sink: HTMLTextAreaElement) {
     setTimeout(() => { if (!EX || EX.done) return; const a = document.activeElement as HTMLElement | null; if (a && a !== sink && a.closest && a.closest(".stage-bar")) return; EX.pause(); }, 0);
   };
   const onVis = () => { if (document.hidden && EX && !EX.done) EX.pause(); };
+  /* Caps Lock state, from every key event: the Czech course hints Caps Lock for capitals with an accent */
+  const onCaps = (e: KeyboardEvent) => {
+    const c = e.getModifierState ? e.getModifierState("CapsLock") : capsOn;
+    if (typeof c === "boolean" && c !== capsOn) { capsOn = c; if (EX && !EX.done) EX.refreshHints(); }
+  };
   const onKey = (e: KeyboardEvent) => {
+    onCaps(e);
     /* a dialog that just closed on this Escape has already handled it (Radix prevents the default) */
     if (dialogOpen() || (e.key === "Escape" && e.defaultPrevented)) return;
     if (S.settings.soundPack !== "off" && !actx) audio();
@@ -298,11 +314,11 @@ export function installEngine(sink: HTMLTextAreaElement) {
   const onCompStart = () => { if (EX) EX.deadKey(); };
   sink.addEventListener("input", onInput); sink.addEventListener("compositionend", onCompEnd); sink.addEventListener("compositionstart", onCompStart);
   sink.addEventListener("focus", onFocus); sink.addEventListener("blur", onBlur);
-  document.addEventListener("visibilitychange", onVis); document.addEventListener("keydown", onKey);
+  document.addEventListener("visibilitychange", onVis); document.addEventListener("keydown", onKey); document.addEventListener("keyup", onCaps);
   return () => {
     sink.removeEventListener("input", onInput); sink.removeEventListener("compositionend", onCompEnd); sink.removeEventListener("compositionstart", onCompStart);
     sink.removeEventListener("focus", onFocus); sink.removeEventListener("blur", onBlur);
-    document.removeEventListener("visibilitychange", onVis); document.removeEventListener("keydown", onKey);
+    document.removeEventListener("visibilitychange", onVis); document.removeEventListener("keydown", onKey); document.removeEventListener("keyup", onCaps);
     if (sinkEl === sink) sinkEl = null;
   };
 }

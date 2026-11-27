@@ -60,7 +60,7 @@ function Intro({ n, onStart, onBack }: { n: number; onStart: () => void; onBack:
   const fingers = [...new Set(ids.map(id => LAY().byId[id]).filter(Boolean).map((k: any) => k.f))] as string[];
   const hk = [...(CO.home as string)].map(c => c.toUpperCase());
   const extra = n === 1 ? t("Rest your left fingers on {left} and your right fingers on {right}. Feel the bumps on F and J. Thumbs rest on the space bar.", { left: hk.slice(0, 4).join(" "), right: hk.slice(4).join(" ") }) :
-    L.shift ? t("Capitals use the Shift key on the opposite hand. Press and hold Shift, tap the letter, then let go of both.") + (CO.id === "cs" ? " " + t("Capitals with an accent: the accent key first, then Shift + the letter. ˇ then Shift + C gives Č, ´ then Shift + A gives Á.") : "") :
+    L.shift ? t("Capitals use the Shift key on the opposite hand. Press and hold Shift, tap the letter, then let go of both.") + (CO.id === "cs" ? " " + t("Capitals with an accent: turn Caps Lock on, press the letter's key (č gives Č), then turn Caps Lock off. Only Ď, Ť, Ň and Ó use the accent key: ˇ then Shift + D gives Ď.") : "") :
     L.dead ? t("These letters have no key of their own. Press the accent key (´, or ˇ with Shift), let go, then press the letter. Nothing shows until the letter comes.") :
     L.digits && CO.id === "cs" ? t("On the Czech keyboard the number row types letters. Hold Shift for digits, on the other hand as with capitals.") :
     L.punct && CO.id === "en" ? t("The apostrophe and quote keys are accent keys on your U.S. International layout. When one comes before a space, press the mark and then Space. The app accepts that.") : "";
