@@ -676,6 +676,15 @@ export const CS: Record<string, string | string[]> = {
   "pool|Everyday 950": "950 běžných",
   "mode|Adaptive": "Adaptivní",
   "mode|Your text": "Vlastní text",
+  /* website accounts */
+  "Saved to your account": "Uloženo ve tvém účtu",
+  "heading|Account": "Účet",
+  "Signed in as {email}": "Účet: {email}",
+  "Your progress is saved to your account and shows up wherever you sign in.": "Tvůj pokrok se ukládá do účtu a uvidíš ho všude, kde se přihlásíš.",
+  "button|Sign out": "Odhlásit se",
+  "Sign in to save your progress to an account and use it on any device. Without signing in, it stays in this browser.": "Přihlas se a tvůj pokrok se uloží do účtu, takže ho budeš mít na každém zařízení. Bez přihlášení zůstane v tomto prohlížeči.",
+  "button|Sign in with Google": "Přihlásit se přes Google",
+  "Signing in didn't work: {err}": "Přihlášení se nepovedlo: {err}",
   /* share card */
   "TOUCH TYPING · ALL TEN FINGERS": "PSANÍ VŠEMI DESETI",
   "{d} {m} {y}": "{d}. {mn}. {y}",

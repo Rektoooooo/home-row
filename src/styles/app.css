@@ -629,3 +629,4 @@ details>summary{cursor:pointer;font-weight:700;margin-top:14px}
 
 /* nav, in the shadcn/ui style: a frosted bar, a muted tab list with a raised active tab, outline pills, a ghost icon button */
 
+.acct{display:grid;gap:8px}

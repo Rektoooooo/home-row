@@ -12,6 +12,7 @@ import { courseFromStore } from "@/core/course";
 import { hasProgress } from "@/core/stats";
 import { S } from "@/core/state";
 import { initLang, LANG, subscribeLang } from "@/i18n";
+import { startAccounts } from "@/lib/account";
 import { connectAccount, installCoreHooks, loadCoach, setSaveStatus } from "@/core/sync";
 import { forwardFromOldHost, readMove } from "@/core/move";
 import { installUiHooks } from "@/ui/celebrate";
@@ -41,6 +42,8 @@ if (!forwardFromOldHost()) {
   );
   setSaveStatus("connecting");
   connectAccount();
+  /* the website: a signed-in Google account (Supabase) syncs the same documents; off in the claude.ai build */
+  startAccounts();
   startMove();
   /* dev only: lets the screenshot script show a toast */
   if (import.meta.env.DEV) (window as any).__hr = { toast: showToast };

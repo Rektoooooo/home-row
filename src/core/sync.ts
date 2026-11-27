@@ -2,7 +2,7 @@
    Ported from legacy/src/app2.js (connectAccount, flush, status), app8.js (coach doc, askClaude) and app8b.js (weekly coach).
    Written against an injected `claude`-like object (setClaude) so it can be tested; without one it falls back to window.claude.
    DOM work of the legacy code goes through `hooks` (hooks.ts). */
-import { S, setS, SC, setSC, COURSE } from "./state";
+import { S, setS, SC, setSC, COURSE, emptyState, emptyCourse } from "./state";
 import { sanitize, merge, stable, writeLocal, writeLocalCs, setSaveHook, takeCsPending, isObj, settingChanged } from "./store";
 import { courseFromStore } from "./course";
 import { rnd, CO } from "./data";
@@ -23,7 +23,7 @@ export let saveStatus:any="connecting",acct:any=null,acctCs:any=null,writing=fal
 export const STATUS_TXT={connecting:"Connecting…",local:"Saved in this browser only",offline:"Saved in this browser only (offline)",account:"Saved to your claude.ai account",failed:"Saved in this browser only (account unavailable)"};
 /* the translated save status for the UI (STATUS_TXT keeps the English text) */
 export function statusText(s?:any):string{
-  switch(s){case "connecting":return t("Connecting…");case "local":return t("Saved in this browser only");case "offline":return t("Saved in this browser only (offline)");case "account":return t("Saved to your claude.ai account");case "failed":return t("Saved in this browser only (account unavailable)")}
+  switch(s){case "connecting":return t("Connecting…");case "local":return t("Saved in this browser only");case "offline":return t("Saved in this browser only (offline)");case "account":return t("Saved to your claude.ai account");case "failed":return t("Saved in this browser only (account unavailable)");case "cloud":return t("Saved to your account")}
   return "";
 }
 export function setSaveStatus(s?:any){saveStatus=s;statusHooks.forEach(f=>{try{f(s)}catch(e){}})}
@@ -43,15 +43,38 @@ export async function flush(){
   writing=false;
   if(dirty)flush();
 }
-export async function connectAccount(){
+/* host: the account to sync with. Default: claude.ai (window.claude). The website passes its Supabase host (supa.ts):
+   then a browser that held another account's progress starts from this account's data (homerow.owner), and coach
+   lessons pasted before signing in join the account (ACCT.adopt). Status "cloud" instead of "account". */
+export let acctHost:any=null;
+export const OWNER_LS="homerow.owner",ASIDE_LS="homerow.aside";
+export function claimOwner(id?:any){
+  let prev:any=null;try{prev=localStorage.getItem(OWNER_LS)}catch(e){}
+  if(prev&&prev!==id){
+    /* the other account's local copy is kept aside, never uploaded to this one */
+    try{localStorage.setItem(ASIDE_LS,JSON.stringify({owner:prev,at:Date.now(),progress:S,cs:SC,coach:COACH_RAW}))}catch(e){}
+    const st=emptyState();st.settings=S.settings;st.seenTips=S.seenTips;setS(st);
+    const cs=emptyCourse();cs.on=SC.on;cs.csLayout=SC.csLayout;setSC(cs);
+    applyCoachRaw({},true);writeLocal();writeLocalCs();
+  }
+  try{localStorage.setItem(OWNER_LS,id)}catch(e){}
+}
+/* sign-out: pending writes go first, then nothing is synced until the next connect */
+export async function disconnectAccount(){
+  if(acct&&(dirty||dirtyCs)&&!writing){try{await flush()}catch(e){}}
+  acct=null;acctCs=null;ACCT=null;acctHost=null;dirty=false;dirtyCs=false;SAMPLE=null;
+  setSaveStatus("local");rerenderCoach();
+}
+export async function connectAccount(host?:any){
   try{
-    const claude=getClaude();
+    const claude=host||getClaude();
     if(!claude||typeof claude.use!=="function")return setSaveStatus("local");
     const timeout=(ms?:any)=>new Promise((_,rej)=>setTimeout(()=>rej(new Error("timeout")),ms));
     const [db,user]:any=await Promise.race([Promise.all([claude.use("db"),claude.use("user")]),timeout(10000)]);
     const id=user?await user.id():null;
     if(!db||!id)return setSaveStatus("local");
-    ACCT={db,id};coachConnect();
+    if(host)claimOwner(id);
+    ACCT=host?{db,id,adopt:true}:{db,id};acctHost=host||null;coachConnect();
     const ref=db.doc("data/users/"+id+"/progress");
     let snap;try{snap=await Promise.race([ref.get(),timeout(10000)])}catch(e){return setSaveStatus("offline")}
     const remote=snap&&snap.exists?sanitize(snap.data()):null;
@@ -69,8 +92,8 @@ export async function connectAccount(){
     onRemoteApplied();
     if(S.updatedAt>0&&(!remote||stable(merged)!==stable(remote))){dirty=true;flush()}
     if(dirtyCs)flush();
-    setSaveStatus("account");
-  }catch(e){setSaveStatus(getClaude()?"offline":"local")}
+    setSaveStatus(host?"cloud":"account");
+  }catch(e){setSaveStatus(host||getClaude()?"offline":"local")}
 }
 /* ---- coach doc ---- */
 export let ACCT:any=null,SAMPLE:any=null,COACH_RAW:any={},COACH:any={note:null,lessons:[],dropped:0},coachQ:Promise<any>=Promise.resolve(),coachOff=false,RM_ID="",COACH_SNAP=false;
@@ -87,8 +110,19 @@ export function applyCoachRaw(raw?:any,quiet?:any){
 export async function coachConnect(){
   const db=ACCT&&ACCT.db;if(!db)return;
   try{
-    db.doc(COACH_PATH(ACCT.id)).onSnapshot((snap?:any)=>{
-      try{applyCoachRaw(snap&&snap.exists?snap.data():{})}catch(e){}
+    const path=COACH_PATH(ACCT.id),adopt=!!ACCT.adopt;
+    db.doc(path).onSnapshot((snap?:any)=>{
+      try{
+        const remote=snap&&snap.exists&&isObj(snap.data())?snap.data():{};
+        /* website: lessons pasted before signing in join the account (by id), so the first sign-in loses nothing */
+        const loc=Array.isArray(COACH_RAW.lessons)?COACH_RAW.lessons:[],rl=Array.isArray(remote.lessons)?remote.lessons:[];
+        const extra=adopt?loc.filter((l?:any)=>isObj(l)&&!rl.some((r?:any)=>isObj(r)&&r.id===l.id)):[];
+        if(extra.length||(adopt&&!remote.note&&COACH_RAW.note)){
+          const merged=Object.assign({},remote,{lessons:rl.concat(extra).slice(0,20)});
+          if(!merged.note&&COACH_RAW.note)merged.note=COACH_RAW.note;
+          applyCoachRaw(merged);Promise.resolve().then(()=>db.doc(path).set(clone(merged))).catch(()=>{});
+        }else applyCoachRaw(remote);
+      }catch(e){}
       COACH_SNAP=true;weeklyAuto();
     },()=>{});
   }catch(e){}
@@ -209,7 +243,7 @@ export function installCoreHooks() {
 }
 /* back to a pristine module state (tests) */
 export function resetSyncForTests() {
-  saveStatus = "connecting"; acct = null; acctCs = null; writing = false; dirty = false; dirtyCs = false; retried = false; statusHooks.length = 0;
+  saveStatus = "connecting"; acct = null; acctCs = null; acctHost = null; writing = false; dirty = false; dirtyCs = false; retried = false; statusHooks.length = 0;
   ACCT = null; SAMPLE = null; COACH_RAW = {}; COACH = { note: null, lessons: [], dropped: 0 }; coachQ = Promise.resolve(); coachOff = false; COACH_SNAP = false;
   ASK = { running: false, ctl: null, err: "", ok: false }; WK.running = false; WK.fired = false; WK.msg = "";
   hasInjected = false; injected = undefined;

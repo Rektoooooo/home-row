@@ -1,7 +1,7 @@
 /* Settings (legacy p1.html #settings + app4.js wireSettings): a shadcn Dialog with segmented ToggleGroups, Switches and an in-dialog
    reset confirmation. Every control writes S.settings, stamps settingsAt and saves, exactly like legacy settingChanged(). */
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { X } from "lucide-react";
+import { LogIn, LogOut, X } from "lucide-react";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
@@ -20,6 +20,7 @@ import { showWelcome } from "@/ui/welcome";
 import { t, speed, LANG, setLang, type Lang } from "@/i18n";
 import { useLang } from "@/i18n/react";
 import { useProgress, useSaveStatus } from "@/lib/progress";
+import { ACCOUNTS, useAccount, signInGoogle, signOutAccount } from "@/lib/account";
 import { reroute } from "@/lib/route";
 import { setThemePref, useThemePref, type ThemePref } from "@/lib/theme";
 
@@ -39,6 +40,28 @@ function Row({ id, label, hint, checked, onChange }: { id: string; label: string
 }
 
 const set = (k: string, v: any) => { S.settings[k] = v; settingChanged(); };
+
+/* website accounts: sign in with Google to keep progress in an account (Supabase); the claude.ai build has none */
+function AccountGroup() {
+  const a = useAccount();
+  return (
+    <Group title={t("heading|Account")}>
+      {a.user ? (
+        <div className="acct">
+          <p className="small">{t("Signed in as {email}", { email: a.user.email || "Google" })}</p>
+          <p className="small muted">{t("Your progress is saved to your account and shows up wherever you sign in.")}</p>
+          <div><Button variant="outline" size="sm" id="acct-out" disabled={a.busy} onClick={() => signOutAccount()}><LogOut aria-hidden="true" />{t("button|Sign out")}</Button></div>
+        </div>
+      ) : (
+        <div className="acct">
+          <p className="small muted">{t("Sign in to save your progress to an account and use it on any device. Without signing in, it stays in this browser.")}</p>
+          <div><Button variant="outline" size="sm" id="acct-in" disabled={a.busy} onClick={() => signInGoogle()}><LogIn aria-hidden="true" />{t("button|Sign in with Google")}</Button></div>
+        </div>
+      )}
+      {a.err ? <p className="small" role="alert">{t("Signing in didn't work: {err}", { err: a.err })}</p> : null}
+    </Group>
+  );
+}
 
 export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   useProgress(); useLang();
@@ -110,6 +133,7 @@ export function SettingsDialog({ open, onOpenChange }: { open: boolean; onOpenCh
             <Row id="set-unlock" label={t("Unlock all lessons")} checked={!!st.unlockAll} onChange={v => set("unlockAll", v)} />
           </Group>
           <Separator />
+          {ACCOUNTS ? <><AccountGroup /><Separator /></> : null}
           <Group title={t("heading|Progress")}>
             <p className="small muted save-line" id="save-status" aria-live="polite">{save}</p>
             {confirm ? (

@@ -23,7 +23,8 @@ A free touch-typing trainer that runs in the browser. Learn to type with all ten
 - **Czech**: a separate Czech course on the Czech QWERTZ or QWERTY keyboard (29 lessons with ě š č ř ž ý á í é ú ů and
   the ´ ˇ accent keys, Czech words and texts), and the whole trainer in Czech, with speed in keystrokes per minute.
 
-Progress is saved in your browser. There is no account and no server.
+Progress is saved in your browser. Sign in with Google (optional) to keep it in an account and use it on any device;
+the claude.ai version saves it to your Claude account.
 
 ## Stack
 
