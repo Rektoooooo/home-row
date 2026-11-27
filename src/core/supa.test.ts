@@ -60,7 +60,7 @@ describe("Supabase host: the claude.ai doc shape on the docs table", () => {
     expect(await (await h.use("user") as any).id()).toBe("u1");
     expect((await db.doc("data/users/u1/progress").get()).exists).toBe(false);
     await db.doc("data/users/u1/progress-cs").set({ a: 1 });
-    expect(f.row("u1", "progress-cs").data).toEqual({ a: 1 });
+    expect(f.row("u1", "progress-cs")!.data).toEqual({ a: 1 });
     const s = await db.doc("data/users/u1/progress-cs").get();
     expect(s.exists).toBe(true); expect(s.data()).toEqual({ a: 1 });
     expect(() => db.doc("data/users/u1/secrets")).toThrow();
@@ -94,9 +94,9 @@ describe("connectAccount with the Supabase host", () => {
     const f = fakeSupa();
     await connectAccount(supaHost(f.c, "u1")); await flushAll();
     expect(sync.saveStatus).toBe("cloud"); expect(statusText("cloud")).toBe("Saved to your account");
-    expect(f.row("u1", "progress").data.lessons[1].done).toBe(true);
-    expect(f.row("u1", "progress-cs").data.lessons[2].done).toBe(true);
-    expect(f.row("u1", "coach").data.lessons.map((l: any) => l.id)).toEqual(["chat-1"]);
+    expect(f.row("u1", "progress")!.data.lessons[1].done).toBe(true);
+    expect(f.row("u1", "progress-cs")!.data.lessons[2].done).toBe(true);
+    expect(f.row("u1", "coach")!.data.lessons.map((l: any) => l.id)).toEqual(["chat-1"]);
     expect(ls.getItem(OWNER_LS)).toBe("u1");
     expect(sync.SAMPLE).toBeNull();
   });
@@ -107,8 +107,8 @@ describe("connectAccount with the Supabase host", () => {
     applyCoachRaw({ lessons: [{ id: "chat-l", title: "Mine", why: "", by: "chat", created: 2, steps: [{ name: "a", text: "jf jf fj fj jjf ffj" }] }] }, true);
     await connectAccount(supaHost(f.c, "u1")); await flushAll();
     expect(Object.keys(S.lessons).sort()).toEqual(["1", "5"]);
-    expect(Object.keys(f.row("u1", "progress").data.lessons).sort()).toEqual(["1", "5"]);
-    expect(f.row("u1", "coach").data.lessons.map((l: any) => l.id)).toEqual(["chat-r", "chat-l"]);
+    expect(Object.keys(f.row("u1", "progress")!.data.lessons).sort()).toEqual(["1", "5"]);
+    expect(f.row("u1", "coach")!.data.lessons.map((l: any) => l.id)).toEqual(["chat-r", "chat-l"]);
     expect(COACH_RAW.lessons.length).toBe(2);
   });
   it("another account's progress in this browser is set aside, never uploaded", async () => {
